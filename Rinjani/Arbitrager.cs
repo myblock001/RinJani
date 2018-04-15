@@ -176,7 +176,9 @@ namespace Rinjani
                 else
                     ZbBuyOrderDeal();
             }
+            CheckOrderStateZb();
             Log.Info(Resources.LookingForOpportunity);
+            _activeOrders.Clear();
         }
 
         private void ExecuteOrderHpx(SpreadAnalysisResult result)
@@ -251,9 +253,7 @@ namespace Rinjani
                 Sleep(config.SleepAfterSend);
                 Log.Info("Zb Order failure,Re-order", bestOrderZb);
                 ExecuteOrderZb(result);
-                return;
             }
-            CheckOrderStateZb();
             Sleep(config.SleepAfterSend);
         }
 
@@ -341,11 +341,45 @@ namespace Rinjani
                             throw new InvalidOperationException(Resources.NoBestAskWasFound);
                         }
                         decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice);
+                        if (order.Price < price)
+                        {
+                            _brokerAdapterRouter.Cancel(order);
+                            order.Status = OrderStatus.Filled;
+                            order.Size = order.FilledSize;
+                            if (order.FilledSize < config.MinSize)
+                                _activeOrders.Remove(order);
+                        }
+                        SpreadAnalysisResult result = new SpreadAnalysisResult
+                        {
+                            BestOrderZb = new Quote(Broker.Zb, QuoteSide.Ask, price, bestAskZb.BasePrice, _activeOrders[0].FilledSize - ZbFilledSize),
+                        };
+                        ExecuteOrderZb(result);
+                        Sleep(config.OrderStatusCheckInterval);
+                        continue;
+                    }
+                    else
+                    {
+                        var bestAskZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Ask).Where(q => q.Broker == Broker.Zb)
+            .OrderByDescending(q => q.Price).FirstOrDefault();
+                        if (bestAskZb == null)
+                        {
+                            throw new InvalidOperationException(Resources.NoBestAskWasFound);
+                        }
+                        decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice);
+                        if (order.Price > price)
+                        {
+                            _brokerAdapterRouter.Cancel(order);
+                            order.Status = OrderStatus.Filled;
+                            order.Size = order.FilledSize;
+                            if (order.FilledSize < config.MinSize)
+                                _activeOrders.Remove(order);
+                        }
                         SpreadAnalysisResult result = new SpreadAnalysisResult
                         {
                             BestOrderZb = new Quote(Broker.Zb, QuoteSide.Ask, price, bestAskZb.BasePrice, _activeOrders[0].FilledSize),
                         };
                         ExecuteOrderZb(result);
+                        Sleep(config.OrderStatusCheckInterval);
                         continue;
                     }
                 }
@@ -375,6 +409,7 @@ namespace Rinjani
                     }
                     Log.Info(Resources.BothLegsAreSuccessfullyFilled);                   
                     Log.Info(Resources.ProfitIs, profit);
+                    _activeOrders.Clear();
                     break;
                 }
 
@@ -390,65 +425,6 @@ namespace Rinjani
                 Sleep(config.OrderStatusCheckInterval);
             }
         }
-
-        //private void CheckOrderState()
-        //{
-        //    var buyOrder = _activeOrders.First(x => x.Side == OrderSide.Buy);
-        //    var sellOrder = _activeOrders.First(x => x.Side == OrderSide.Sell);
-        //    var config = _configStore.Config;
-        //    foreach (var i in Enumerable.Range(1, config.MaxRetryCount))
-        //    {
-        //        Sleep(config.OrderStatusCheckInterval);
-        //        Log.Info(Resources.OrderCheckAttempt, i);
-        //        Log.Info(Resources.CheckingIfBothLegsAreDoneOrNot);
-
-        //        try
-        //        {
-        //            _brokerAdapterRouter.Refresh(buyOrder);
-        //            _brokerAdapterRouter.Refresh(sellOrder);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            Log.Warn(ex.Message);
-        //            Log.Debug(ex);
-        //        }
-
-        //        if (buyOrder.Status != OrderStatus.Filled)
-        //        {
-        //            Log.Warn(Resources.BuyLegIsNotFilledYetPendingSizeIs, sellOrder.PendingSize);
-        //        }
-        //        if (sellOrder.Status != OrderStatus.Filled)
-        //        {
-        //            Log.Warn(Resources.SellLegIsNotFilledYetPendingSizeIs, sellOrder.PendingSize);
-        //        }
-
-        //        if (buyOrder.Status == OrderStatus.Filled && sellOrder.Status == OrderStatus.Filled)
-        //        {
-        //            var profit = Math.Round(sellOrder.FilledSize * sellOrder.AverageFilledPrice -
-        //                         buyOrder.FilledSize * buyOrder.AverageFilledPrice);
-        //            Log.Info(Resources.BothLegsAreSuccessfullyFilled);
-        //            Log.Info(Resources.BuyFillPriceIs, buyOrder.AverageFilledPrice);
-        //            Log.Info(Resources.SellFillPriceIs, sellOrder.AverageFilledPrice);
-        //            Log.Info(Resources.ProfitIs, profit);
-        //            break;
-        //        }
-
-        //        if (i == config.MaxRetryCount)
-        //        {
-        //            Log.Warn(Resources.MaxRetryCountReachedCancellingThePendingOrders);
-        //            if (buyOrder.Status != OrderStatus.Filled)
-        //            {
-        //                _brokerAdapterRouter.Cancel(buyOrder);
-        //            }
-
-        //            if (sellOrder.Status != OrderStatus.Filled)
-        //            {
-        //                _brokerAdapterRouter.Cancel(sellOrder);
-        //            }
-        //            break;
-        //        }
-        //    }
-        //}
 
         private void QuoteUpdated(object sender, EventArgs e)
         {
