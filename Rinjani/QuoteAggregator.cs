@@ -36,7 +36,6 @@ namespace Rinjani
             private set
             {
                 _quotes = value;
-                OnQuoteUpdated();
             }
         }
 
@@ -55,6 +54,7 @@ namespace Rinjani
             {
                 _isRunning = true;
                 Aggregate();
+                OnQuoteUpdated();
             }
             catch (Exception ex)
             {
@@ -67,14 +67,7 @@ namespace Rinjani
             }
         }
 
-        private void Aggregate()
-        {
-            Log.Debug("Aggregating quotes...");
-            Quotes = _brokerAdapters.SelectMany(x => x.FetchQuotes().ToList()).Merge(_config.PriceMergeSize).ToList();
-            Log.Debug("Aggregated.");
-        }
-
-        public void OrderAggregate()
+        public void Aggregate()
         {
             Log.Debug("Aggregating quotes...");
             Quotes = _brokerAdapters.SelectMany(x => x.FetchQuotes().ToList()).Merge(_config.PriceMergeSize).ToList();

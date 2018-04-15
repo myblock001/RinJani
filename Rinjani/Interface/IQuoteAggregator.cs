@@ -7,6 +7,6 @@ namespace Rinjani
     {
         IList<Quote> Quotes { get; }
         event EventHandler QuoteUpdated;
-        void OrderAggregate();
+        void Aggregate();
     }
 }

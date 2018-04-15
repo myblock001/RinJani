@@ -298,12 +298,12 @@ namespace Rinjani
             {
                 Log.Info(Resources.BothLegsAreSuccessfullyFilled);
                 Log.Info("Hpx order Fill price is ", order.AverageFilledPrice);
-                _quoteAggregator.OrderAggregate();//执行Zb下单
                 return;
             }
         }
 
         private decimal ZbFilledSize = 0;
+        private decimal ZbAverageFilledPrice = 0;
         private void CheckOrderStateZb()
         {
             var config = _configStore.Config;
@@ -326,15 +326,54 @@ namespace Rinjani
                 if (order.Status != OrderStatus.Filled)
                 {
                     Log.Warn("Zb Leg is not filled yet,pending size is {0}", order.PendingSize);
+                    ZbFilledSize = 0;
+                    for(int j=1;j< _activeOrders.Count;j++)
+                    { 
+                        ZbFilledSize += _activeOrders[j].FilledSize;
+                    }
+                    _quoteAggregator.Aggregate();//更新ticker数据
+                    if (order.Side == OrderSide.Buy)
+                    {
+                        var bestAskZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Ask).Where(q => q.Broker == Broker.Zb)
+                            .OrderByDescending(q => q.Price).FirstOrDefault();
+                        if (bestAskZb == null)
+                        {
+                            throw new InvalidOperationException(Resources.NoBestAskWasFound);
+                        }
+                        decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice);
+                        SpreadAnalysisResult result = new SpreadAnalysisResult
+                        {
+                            BestOrderZb = new Quote(Broker.Zb, QuoteSide.Ask, price, bestAskZb.BasePrice, _activeOrders[0].FilledSize),
+                        };
+                        ExecuteOrderZb(result);
+                        continue;
+                    }
                 }
 
                 if (order.Status == OrderStatus.Filled)
                 {
-                    var profit = Math.Round(sellOrder.FilledSize * sellOrder.AverageFilledPrice -
-                                 buyOrder.FilledSize * buyOrder.AverageFilledPrice);
-                    Log.Info(Resources.BothLegsAreSuccessfullyFilled);
-                    Log.Info(Resources.BuyFillPriceIs, buyOrder.AverageFilledPrice);
-                    Log.Info(Resources.SellFillPriceIs, sellOrder.AverageFilledPrice);
+                    decimal _spendCash = 0;
+                    ZbFilledSize = 0;
+                    for (int j = 1; j < _activeOrders.Count; j++)
+                    {
+                        ZbFilledSize += _activeOrders[j].FilledSize;
+                        _spendCash += _activeOrders[j].FilledSize * _activeOrders[j].AverageFilledPrice;
+                    }
+                    ZbAverageFilledPrice = _spendCash / ZbFilledSize;
+                    decimal profit = 0;
+                    if (order.Side == OrderSide.Buy)
+                    {
+                        profit = Math.Round(_activeOrders[0].FilledSize * _activeOrders[0].AverageFilledPrice - _spendCash);
+                        Log.Info(Resources.BuyFillPriceIs, ZbAverageFilledPrice);
+                        Log.Info(Resources.SellFillPriceIs, _activeOrders[0].AverageFilledPrice);
+                    }
+                    else
+                    {
+                        profit = Math.Round(_spendCash - _activeOrders[0].FilledSize * _activeOrders[0].AverageFilledPrice);
+                        Log.Info(Resources.SellFillPriceIs, ZbAverageFilledPrice);
+                        Log.Info(Resources.BuyFillPriceIs, _activeOrders[0].AverageFilledPrice);
+                    }
+                    Log.Info(Resources.BothLegsAreSuccessfullyFilled);                   
                     Log.Info(Resources.ProfitIs, profit);
                     break;
                 }
@@ -342,14 +381,9 @@ namespace Rinjani
                 if (i == config.MaxRetryCount)
                 {
                     Log.Warn(Resources.MaxRetryCountReachedCancellingThePendingOrders);
-                    if (buyOrder.Status != OrderStatus.Filled)
+                    if (order.Status != OrderStatus.Filled)
                     {
-                        _brokerAdapterRouter.Cancel(buyOrder);
-                    }
-
-                    if (sellOrder.Status != OrderStatus.Filled)
-                    {
-                        _brokerAdapterRouter.Cancel(sellOrder);
+                        _brokerAdapterRouter.Cancel(order);
                     }
                     break;
                 }
