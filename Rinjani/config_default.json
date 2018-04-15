@@ -1,0 +1,46 @@
+// Please rename config_default.json to config.json
+{
+  "DemoMode": "true",
+  "PriceMergeSize": "100",
+  "MaxSize": "0.01",
+  "MinSize": "0.01",
+  "MinTargetProfit": "5", //套利开启点 百分比
+  "CancelPoint": "0.1", //取消点 百分比
+  "StopPoint": "0.1", //止损点 百分比
+  "IterationInterval": "3000",
+  "PositionRefreshInterval": "5000",
+  "SleepAfterSend": "5000",
+  "MaxNetExposure": "0.1",
+  "MaxRetryCount": "10",
+  "OrderStatusCheckInterval": "3000",
+  "Brokers": [
+    {
+      "Broker": "Coincheck",
+      "Enabled": "true",
+      "Key": "xxxxx",
+      "Secret": "xxxxx",
+      "MaxLongPosition": "0.30",
+      "MaxShortPosition": "0.30",
+      "CashMarginType": "MarginOpen"
+    },
+    {
+      "Broker": "Zb",
+      "Enabled": "true",
+      "Key": "xxxxx",
+      "Secret": "xxxxx",
+      "MaxLongPosition": "0.20",
+      "MaxShortPosition": "0",
+      "CashMarginType": "Cash"
+    },
+    {
+      "Broker": "Hpx",
+      "Enabled": "true",
+      "Key": "xxxxx",
+      "Secret": "xxxxx",
+      "MaxLongPosition": "0.30",
+      "MaxShortPosition": "0.30",
+      "CashMarginType": "NetOut",
+      "LeverageLevel": 10
+    }
+  ]
+}

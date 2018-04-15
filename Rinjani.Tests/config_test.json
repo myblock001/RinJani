@@ -1,0 +1,35 @@
+// Please rename config_default.json to config.json
+{
+	"DemoMode": "true",
+	"PriceMergeSize": "100",
+	"MaxSize": "0.01",
+	"MinSize": "0.01",
+	"MinTargetProfit": "5",
+	"IterationInterval": "3000",
+	"PositionRefreshInterval": "5000",
+	"SleepAfterSend": "5000",
+	"MaxNetExposure": "0.1",
+	"MaxRetryCount": "10",
+	"OrderStatusCheckInterval": "3000",
+	"Brokers": [
+    {
+      "Broker": "Zb",
+      "Enabled": "true",
+      "Key": "1e37d244-00a5-4e3e-b0a0-05748ef006f6",
+      "Secret": "0a70a943-48f6-4f67-beba-55ac98a1f07c",
+      "MaxLongPosition": "0.20",
+      "MaxShortPosition": "0",
+      "CashMarginType": "Cash"
+    },
+    {
+      "Broker": "Hpx",
+      "Enabled": "true",
+      "Key": "ak280878df02ae42fc",
+      "Secret": "42ece95a04414380af5914731fa07d2c",
+      "MaxLongPosition": "0.30",
+      "MaxShortPosition": "0.30",
+      "CashMarginType": "Cash",
+      "LeverageLevel": 10
+    }
+	]
+}

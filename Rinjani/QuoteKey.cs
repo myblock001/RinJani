@@ -1,0 +1,40 @@
+﻿namespace Rinjani
+{
+    public class QuoteKey
+    {
+        public QuoteKey(Broker broker, QuoteSide side, decimal price, decimal baseprice)
+        {
+            Broker = broker;
+            Side = side;
+            Price = price;
+            BasePrice = baseprice;
+        }
+
+        public QuoteKey()
+        {
+        }
+
+        public Broker Broker { get; }
+        public QuoteSide Side { get; }
+        public decimal Price { get; }
+        public decimal BasePrice { get; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+
+            var that = (QuoteKey) obj;
+            return Broker == that.Broker &&
+                   Side == that.Side &&
+                   Price == that.Price && BasePrice == that.BasePrice;
+        }
+
+        public override int GetHashCode()
+        {
+            return Broker.GetHashCode() ^ Side.GetHashCode() ^ Price.GetHashCode() ^ BasePrice.GetHashCode();
+        }
+    }
+}
