@@ -1,28 +1,3 @@
-# ⚠️This version is no longer maintained. [A newer version is available](https://github.com/bitrinjani/r2).
-
-# Rinjani Bitcoin Arbitrager
-
-Rinjani Bitcoin Arbitrager is a Proof-Of-Concept prototype of an automatic arbitrage trading system targeting Bitcoin exchanges operated in Japan.
-
-![Screenshot](rinjani.gif)
-
-## Getting Started
-
-To run the Arbitrager, clone this repository and build it in Visual Studio 2017. Open _config.json_ and replace Key and Secret fields with your API keys (tokens) and secrets. 
-
-### Prerequisites
-
-#### Software
-- Windows OS (Tested on Windows 10)
-- Visual Studio 2017
-
-#### Supported Brokers (Exchanges)
-Currently, the Arbitrager supports three brokers (exchanges) operated in Japan.
-
-- Bitflyer
-- Quoine
-- Coincheck
-
 ## How it works
 1. Every 3 seconds, the Arbitrager fetches quotes from all configured brokers.
 1. Verifies if the max net exposure (_MaxNetExposure_ config) is not breached.
