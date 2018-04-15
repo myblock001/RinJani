@@ -1,6 +1,5 @@
 ## How it works
 1. Every 3 seconds, the Arbitrager fetches quotes from all configured brokers.
-1. Verifies if the max net exposure (_MaxNetExposure_ config) is not breached.
 1. Filters out quotes that are not usable for arbitrage. For example, if _MaxShortPosition_ config is 0 and the current position is 0 for a broker, ask quotes for the broker are filtered out.
 1. Calculates best ask and best bid. If the spread is not inverted, there is no arbitrage opportunity, so the arbitrager waits for the next iteration.
 1. Verifies if there is enough expected profit. If the expected profit is smaller than _MinTargetProfit_ config, the Arbitrager waits for the next iteration.
@@ -19,7 +18,7 @@ All configurations are stored in _config.json_.
 |PriceMergeSize|integer|Merges small quotes into the specified price ladder before analyzing arbitrage opportunity.|
 |MaxSize|decimal|Maximum BTC size to be sent to a broker.|
 |MinSize|decimal|Minimum BTC size to be sent to a broker.|
-|MinTargetProfit|Integer|Minimum JPY size to try to arbitrage.|
+|MinTargetProfit|Integer|Minimum size to try to arbitrage.|
 |IterationInterval|Millisecond|Time lapse in milliseconds of an iteration. When it's set to 3000, the quotes fetch and the spreads analysis for all the brokers are done every 3 seconds|
 |PositionRefreshInterval|Millisecond|Time lapse in milliseconds of position data refresh. Position data is used to check max exposure and long/short availability for each broker.|
 |SleepAfterSend|Millisecond|Time lapse in milliseconds after one arbitrage is done.|
@@ -40,17 +39,8 @@ All configurations are stored in _config.json_.
 
 ### Limitations
 
-For Bitflyer, _CashMarginType_ must be Cash. Although the broker provides leverage trading as BTC-FX, the price range is totally different from BTCJPY. BTC-FX is not applicable to arbitrage. 
-
 ### Log files
 All log files are saved under _logs_ directory. To configure logging, edit _nlog.conf_.
-
-|File name|Description|
-|---------|-----------|
-|Rinjani.log|Standard log file|
-|Rinjani_debug.log|Verbose logging, including all REST HTTP requests and responses in JSON format|
-|Rinjani_arbitrager.log|Arbitrage activity log|
-|Rinjani_position.log|BTC position log|
 
 ## Running the tests
 
