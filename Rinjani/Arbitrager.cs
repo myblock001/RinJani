@@ -47,7 +47,7 @@ namespace Rinjani
                 .OrderBy(q => q.Price).FirstOrDefault();
             if (bestAskHpx == null)
             {
-                throw new InvalidOperationException(Resources.NoBestAskWasFound);
+                return;
             }
 
             ///Hpx卖价低于Zb基准价
@@ -55,7 +55,7 @@ namespace Rinjani
             .OrderByDescending(q => q.Price).FirstOrDefault();
             if (bestBidZb == null)
             {
-                throw new InvalidOperationException(Resources.NoBestAskWasFound);
+                return;
             }
             decimal price = Math.Max(bestBidZb.Price, bestBidZb.BasePrice) - 0.01m;
             decimal invertedSpread = price - bestAskHpx.Price;
@@ -85,13 +85,16 @@ namespace Rinjani
             var config = _configStore.Config;
             var bestBidHpx = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Bid).Where(q => q.Broker == Broker.Hpx)
                 .OrderByDescending(q => q.Price).FirstOrDefault();
-
+            if (bestBidHpx == null)
+            {
+                return;
+            }
             ///Hpx买价高于Zb基准价
             var bestAskZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Ask).Where(q => q.Broker == Broker.Zb)
             .OrderBy(q => q.Price).FirstOrDefault();
             if (bestAskZb == null)
             {
-                throw new InvalidOperationException(Resources.NoBestAskWasFound);
+                return;
             }
             decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice) + 0.01m;
             decimal invertedSpread = bestBidHpx.Price - price;
@@ -125,7 +128,7 @@ namespace Rinjani
             .OrderByDescending(q => q.Price).FirstOrDefault();
             if (bestBidZb == null)
             {
-                throw new InvalidOperationException(Resources.NoBestAskWasFound);
+                return;
             }
             decimal price = Math.Max(bestBidZb.Price, bestBidZb.BasePrice);
             SpreadAnalysisResult result = new SpreadAnalysisResult
@@ -144,7 +147,7 @@ namespace Rinjani
             .OrderByDescending(q => q.Price).FirstOrDefault();
             if (bestAskZb == null)
             {
-                throw new InvalidOperationException(Resources.NoBestAskWasFound);
+                return;
             }
             decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice);
             SpreadAnalysisResult result = new SpreadAnalysisResult
