@@ -76,20 +76,21 @@ namespace Rinjani.Zb
 
         public BrokerBalance GetBalance()
         {
-            var path = "/api/getAccountInfo?";
-            string body = "accesskey=" +_config.Key+ "&method=getAccountInfo";
-            path += body;
-            var req = BuildRequest(path,"GET",body);
-            RestUtil.LogRestRequest(req);
-            SetBaseUrl("trade");
-            var response = _restClient.Execute(req);
-            if (response == null || response.StatusCode == 0)
-            {
-                Log.Debug($"Zb GetBalance response is null or failed ...");
-                return null;
-            }
             try
             {
+                Log.Debug($"Zb GetBalance Start ...");
+                var path = "/api/getAccountInfo?";
+                string body = "accesskey=" + _config.Key + "&method=getAccountInfo";
+                path += body;
+                var req = BuildRequest(path, "GET", body);
+                RestUtil.LogRestRequest(req);
+                SetBaseUrl("trade");
+                var response = _restClient.Execute(req);
+                if (response == null || response.StatusCode == 0)
+                {
+                    Log.Debug($"Zb GetBalance response is null or failed ...");
+                    return null;
+                }
                 JObject j = JObject.Parse(response.Content);
                 j = JObject.Parse(j["result"].ToString());
                 JArray jar = JArray.Parse(j["coins"].ToString());
@@ -97,7 +98,7 @@ namespace Rinjani.Zb
                 JObject jqc = null;
                 foreach (JObject jj in jar)
                 {
-                    if(jj["enName"].ToString().ToUpper()== "HSR")
+                    if (jj["enName"].ToString().ToUpper() == "HSR")
                     {
                         jhsr = jj;
                     }
@@ -112,9 +113,10 @@ namespace Rinjani.Zb
                 bb.Broker = Broker;
                 bb.Hsr = decimal.Parse(jhsr["available"].ToString());
                 bb.Cash = decimal.Parse(jqc["available"].ToString());
+                Log.Debug($"Zb GetBalance End ...");
                 return bb;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log.Debug($"Zb GetBalance response is null or failed ...{ex.Message}");
                 return null;

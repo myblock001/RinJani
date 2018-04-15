@@ -48,14 +48,20 @@ namespace Rinjani
             {
                 _isRefreshing = true;
                 var config = _configStore.Config;
-                var balanceMap = new Dictionary<Broker, BrokerBalance>();
+                BalanceMap.Clear();
                 foreach (var brokerConfig in config.Brokers.Where(b => b.Enabled))
                 {
                     BrokerBalance currentBalance = GetBalance(brokerConfig.Broker);
-                    balanceMap.Add(brokerConfig.Broker, currentBalance);
+                    //if (!BalanceMap(brokerConfig.Broker)&&BalanceMap[brokerConfig.Broker] == null)
+                    //    BalanceMap.Add(brokerConfig.Broker, currentBalance);
+                    //else
+                    //{
+                    //    BalanceMap[brokerConfig.Broker].Hsr = currentBalance.Hsr;
+                    //    BalanceMap[brokerConfig.Broker].Cash = currentBalance.Cash;
+                    //}
+                    BalanceMap.Add(brokerConfig.Broker, currentBalance);
                 } 
 
-                BalanceMap = balanceMap;
                 LogBalances();
             }
             finally

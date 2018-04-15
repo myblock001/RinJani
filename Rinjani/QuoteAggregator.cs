@@ -25,7 +25,7 @@ namespace Rinjani
             _brokerAdapters = Util.GetEnabledBrokerAdapters(brokerAdapters, configStore);
             _timer = timer;
             Util.StartTimer(timer, _config.QuoteRefreshInterval, OnTimerTriggered);
-            //Aggregate();
+            Aggregate();
         }
 
         public event EventHandler QuoteUpdated;

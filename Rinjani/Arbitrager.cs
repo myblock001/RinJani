@@ -161,9 +161,10 @@ namespace Rinjani
         private void Arbitrage()
         {
             Log.Info(Resources.LookingForOpportunity);
-            if(_positionService.BalanceMap.Count<2)
+            if (_positionService.BalanceMap.Count<2)
                 _positionService.GetBalances();
-
+            if (_positionService.BalanceMap[Broker.Hpx] == null || _positionService.BalanceMap[Broker.Zb] == null)
+                return;
             if (_activeOrders.Count == 0)
             {
                 ZbFilledSize = 0;
@@ -181,9 +182,9 @@ namespace Rinjani
                 else
                     ZbBuyOrderDeal();
                 CheckOrderStateZb();
+                _positionService.GetBalances();
             }
             Log.Info(Resources.LookingForOpportunity);
-            _positionService.GetBalances();
             _activeOrders.Clear();
         }
 

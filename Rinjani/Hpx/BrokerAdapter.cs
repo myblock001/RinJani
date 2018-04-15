@@ -71,6 +71,7 @@ namespace Rinjani.Hpx
         {
             try
             {
+                Log.Debug("Hpx GetBalance Begin");
                 var path = "/api/v2/getAccountInfo?";
                 string body = "method=getAccountInfo&accesskey=" + _config.Key;
                 path += body;
@@ -89,10 +90,12 @@ namespace Rinjani.Hpx
                 bb.Broker = Broker;
                 bb.Hsr = decimal.Parse(j["HSR"].ToString());
                 bb.Cash = decimal.Parse(j["CNYT"].ToString());
+                Log.Debug("Hpx GetBalance End");
                 return bb;
             }
-            catch
+            catch(Exception ex)
             {
+                Log.Debug("Hpx GetBalance Exception:"+ex.Message);
                 return null;
             }
         }
@@ -109,63 +112,86 @@ namespace Rinjani.Hpx
                 var quotes = depth.ToQuotes();
                 return quotes ?? new List<Quote>();
             }
-            catch
+            catch(Exception ex)
             {
-                Log.Debug($"Hpx FetchQuotes Failed");
+                Log.Debug($"Hpx FetchQuotes Exception:" +ex.Message);
                 return new List<Quote>();
             }
         }
 
         private SendReply Send(SendOrderParam param)
         {
-            var path = "/api/v2/order?";
-            int tradetype = param.side == "buy" ? 0 : 1;
-            string body = "method=order&accesskey=" + _config.Key + $"&amount={param.quantity}&currency=hsr_cnyt&price={param.price}&tradeType={tradetype}";
-            path += body;
-            var req = BuildRequest(path, "GET", body);
-            RestUtil.LogRestRequest(req);
-            var response = _restClient.Execute(req);
-            if (response == null || response.StatusCode == 0)
+            try
             {
-                Log.Debug($"Hpx Send response is null or failed ...");
-                return new SendReply() { code = "-1" };
+                var path = "/api/v2/order?";
+                int tradetype = param.side == "buy" ? 0 : 1;
+                string body = "method=order&accesskey=" + _config.Key + $"&amount={param.quantity}&currency=hsr_cnyt&price={param.price}&tradeType={tradetype}";
+                path += body;
+                var req = BuildRequest(path, "GET", body);
+                RestUtil.LogRestRequest(req);
+                var response = _restClient.Execute(req);
+                if (response == null || response.StatusCode == 0)
+                {
+                    Log.Debug($"Hpx Send response is null or failed ...");
+                    return new SendReply() { code = "-1" };
+                }
+                JObject j = JObject.Parse(response.Content);
+                SendReply reply = j.ToObject<SendReply>();
+                return reply;
             }
-            JObject j = JObject.Parse(response.Content);
-            SendReply reply = j.ToObject<SendReply>();
-            return reply;
+            catch(Exception ex)
+            {
+                Log.Debug($"Hpx Send Exception:" + ex.Message);
+                return null;
+            }
         }
 
         private OrderStateReply GetOrderState(string id)
         {
-            var path = "/api/v2/getOrder?";
-            string body = "method=getOrder&accesskey=" + _config.Key + $"&id={id}&currency=hsr_cnyt";
-            path += body;
-            var req = BuildRequest(path, "GET", body);
-            RestUtil.LogRestRequest(req);
-            var response = _restClient.Execute(req);
-            if (response == null || response.StatusCode == 0|| response.Content.IndexOf("total_amount")<0)
+            try
             {
-                Log.Debug($"Hpx GetOrderState response is null or failed ...");
+                var path = "/api/v2/getOrder?";
+                string body = "method=getOrder&accesskey=" + _config.Key + $"&id={id}&currency=hsr_cnyt";
+                path += body;
+                var req = BuildRequest(path, "GET", body);
+                RestUtil.LogRestRequest(req);
+                var response = _restClient.Execute(req);
+                if (response == null || response.StatusCode == 0 || response.Content.IndexOf("total_amount") < 0)
+                {
+                    Log.Debug($"Hpx GetOrderState response is null or failed ...");
+                    return null;
+                }
+                JObject j = JObject.Parse(response.Content);
+                j = JObject.Parse(j["data"].ToString());
+                OrderStateReply reply = j.ToObject<OrderStateReply>();
+                return reply;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug($"Hpx GetOrderState Exception:" + ex.Message);
                 return null;
             }
-            JObject j = JObject.Parse(response.Content);
-            j = JObject.Parse(j["data"].ToString());
-            OrderStateReply reply = j.ToObject<OrderStateReply>();
-            return reply;
         }
 
         private void Cancel(string orderId)
         {
-            var path = "/api/v2/cancel?";
-            string body = "method=cancel&accesskey=" + _config.Key + $"&id={orderId}&currency=hsr_cnyt";
-            path += body;
-            var req = BuildRequest(path, "GET", body);
-            RestUtil.LogRestRequest(req);
-            var response = _restClient.Execute(req);
-            if (response == null || response.StatusCode == 0)
+            try
             {
-                Log.Debug($"Hpx Cancel response is null or failed ...");
-                Cancel(orderId);
+                var path = "/api/v2/cancel?";
+                string body = "method=cancel&accesskey=" + _config.Key + $"&id={orderId}&currency=hsr_cnyt";
+                path += body;
+                var req = BuildRequest(path, "GET", body);
+                RestUtil.LogRestRequest(req);
+                var response = _restClient.Execute(req);
+                if (response == null || response.StatusCode == 0)
+                {
+                    Log.Debug($"Hpx Cancel response is null or failed ...");
+                    Cancel(orderId);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug($"Hpx Cancel Exception:" + ex.Message);
             }
         }
 
