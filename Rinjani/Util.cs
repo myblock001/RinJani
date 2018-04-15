@@ -27,9 +27,10 @@ namespace Rinjani
 
         public static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
         {
-            var dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            dtDateTime = dtDateTime.AddSeconds(unixTimeStamp).ToLocalTime();
-            return dtDateTime;
+            DateTime dtStart = TimeZone.CurrentTimeZone.ToLocalTime(new DateTime(1970, 1, 1));
+            long lTime = long.Parse(unixTimeStamp + "0000");
+            TimeSpan toNow = new TimeSpan(lTime);
+            return dtStart.Add(toNow);
         }
 
         public static string Hr(int width)

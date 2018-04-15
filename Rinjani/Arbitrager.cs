@@ -57,14 +57,14 @@ namespace Rinjani
             {
                 throw new InvalidOperationException(Resources.NoBestAskWasFound);
             }
-            decimal price = Math.Max(bestBidZb.Price, bestBidZb.BasePrice);
+            decimal price = Math.Max(bestBidZb.Price, bestBidZb.BasePrice) - 0.01m;
             decimal invertedSpread = price - bestAskHpx.Price;
             decimal availableVolume = Util.RoundDown(Math.Min(bestBidZb.Volume, bestAskHpx.Volume), 3);
-            decimal allowedSellSize = 1;
-            decimal allowedBuySize = 1;
-            decimal targetVolume = new[] { availableVolume, config.MaxSize, allowedSellSize, allowedBuySize }.Min();
-            targetVolume = Util.RoundDown(targetVolume, 3);
-            decimal targetProfit = Math.Round(invertedSpread * targetVolume);
+            var balanceMap = _positionService.BalanceMap;
+            decimal allowedSizeHpx = balanceMap[bestAskHpx.Broker].Cash / bestAskHpx.Price;
+            decimal allowedSizeZb = balanceMap[bestBidZb.Broker].Hsr;
+            decimal targetVolume = new[] { availableVolume, config.MaxSize, allowedSizeHpx, allowedSizeZb }.Min();
+            targetVolume = Util.RoundDown(targetVolume, 2);
             if (invertedSpread / price > config.ArbitragePoint / 100)
             {
                 SpreadAnalysisResult result = new SpreadAnalysisResult
@@ -74,7 +74,6 @@ namespace Rinjani
                     InvertedSpread = invertedSpread,
                     AvailableVolume = availableVolume,
                     TargetVolume = targetVolume,
-                    TargetProfit = targetProfit
                 };
                 ExecuteOrderHpx(result);
                 return;
@@ -94,13 +93,15 @@ namespace Rinjani
             {
                 throw new InvalidOperationException(Resources.NoBestAskWasFound);
             }
-            decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice);
+            decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice) + 0.01m;
             decimal invertedSpread = bestBidHpx.Price - price;
             decimal availableVolume = Util.RoundDown(Math.Min(bestAskZb.Volume, bestBidHpx.Volume), 3);
-
-            decimal targetVolume = new[] { availableVolume, config.MaxSize}.Min();
-            targetVolume = Util.RoundDown(targetVolume, 3);
-            decimal targetProfit = Math.Round(invertedSpread * targetVolume);
+            
+            var balanceMap = _positionService.BalanceMap;
+            decimal allowedSizeHpx = balanceMap[bestBidHpx.Broker].Hsr;
+            decimal allowedSizeZb = balanceMap[bestAskZb.Broker].Cash / bestAskZb.Price;
+            decimal targetVolume = new[] { availableVolume, config.MaxSize, allowedSizeHpx, allowedSizeZb }.Min();
+            targetVolume = Util.RoundDown(targetVolume, 2);
             if (invertedSpread / price > config.ArbitragePoint / 100)
             {
                 SpreadAnalysisResult result = new SpreadAnalysisResult
@@ -110,7 +111,6 @@ namespace Rinjani
                     InvertedSpread = invertedSpread,
                     AvailableVolume = availableVolume,
                     TargetVolume = targetVolume,
-                    TargetProfit = targetProfit
                 };
                 ExecuteOrderHpx(result);
                 return;
@@ -158,6 +158,8 @@ namespace Rinjani
         private void Arbitrage()
         {
             Log.Info(Resources.LookingForOpportunity);
+            if(_positionService.BalanceMap.Count<2)
+                _positionService.GetBalances();
 
             if (_activeOrders.Count == 0)
             {
@@ -175,9 +177,10 @@ namespace Rinjani
                     ZbSellOrderDeal();
                 else
                     ZbBuyOrderDeal();
+                CheckOrderStateZb();
             }
-            CheckOrderStateZb();
             Log.Info(Resources.LookingForOpportunity);
+            _positionService.GetBalances();
             _activeOrders.Clear();
         }
 
@@ -206,12 +209,6 @@ namespace Rinjani
             if (availableVolume < config.MinSize)
             {
                 Log.Info(Resources.AvailableVolumeIsSmallerThanMinSize);
-                return;
-            }
-
-            if (targetProfit < config.ArbitragePoint / 100 * bestOrderHpx.Price)
-            {
-                Log.Info(Resources.TargetProfitIsSmallerThanMinProfit);
                 return;
             }
 
@@ -281,9 +278,9 @@ namespace Rinjani
 
             if (order.Status != OrderStatus.Filled)
             {
-                _brokerAdapterRouter.Cancel(order);
                 if (order.FilledSize < config.MinSize)
                 {
+                    _brokerAdapterRouter.Cancel(order);
                     _activeOrders.Clear();
                     return;
                 }
@@ -297,7 +294,7 @@ namespace Rinjani
             if (order.Status == OrderStatus.Filled)
             {
                 Log.Info(Resources.BothLegsAreSuccessfullyFilled);
-                Log.Info("Hpx order Fill price is ", order.AverageFilledPrice);
+                Log.Info("Hpx order Fill price is {0}", order.Price);
                 return;
             }
         }
@@ -331,56 +328,59 @@ namespace Rinjani
                     { 
                         ZbFilledSize += _activeOrders[j].FilledSize;
                     }
-                    _quoteAggregator.Aggregate();//更新ticker数据
-                    if (order.Side == OrderSide.Buy)
-                    {
-                        var bestAskZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Ask).Where(q => q.Broker == Broker.Zb)
-                            .OrderByDescending(q => q.Price).FirstOrDefault();
-                        if (bestAskZb == null)
-                        {
-                            throw new InvalidOperationException(Resources.NoBestAskWasFound);
-                        }
-                        decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice);
-                        if (order.Price < price)
-                        {
-                            _brokerAdapterRouter.Cancel(order);
-                            order.Status = OrderStatus.Filled;
-                            order.Size = order.FilledSize;
-                            if (order.FilledSize < config.MinSize)
-                                _activeOrders.Remove(order);
-                        }
-                        SpreadAnalysisResult result = new SpreadAnalysisResult
-                        {
-                            BestOrderZb = new Quote(Broker.Zb, QuoteSide.Ask, price, bestAskZb.BasePrice, _activeOrders[0].FilledSize - ZbFilledSize),
-                        };
-                        ExecuteOrderZb(result);
-                        Sleep(config.OrderStatusCheckInterval);
-                        continue;
-                    }
+                    if (ZbFilledSize > order.Size - config.MinSize)
+                        order.Status = OrderStatus.Filled;
                     else
                     {
-                        var bestAskZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Ask).Where(q => q.Broker == Broker.Zb)
-            .OrderByDescending(q => q.Price).FirstOrDefault();
-                        if (bestAskZb == null)
+                        _quoteAggregator.Aggregate();//更新ticker数据
+                        if (order.Side == OrderSide.Buy)
                         {
-                            throw new InvalidOperationException(Resources.NoBestAskWasFound);
+                            var bestAskZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Ask).Where(q => q.Broker == Broker.Zb)
+                                .OrderByDescending(q => q.Price).FirstOrDefault();
+                            if (bestAskZb == null)
+                            {
+                                throw new InvalidOperationException(Resources.NoBestAskWasFound);
+                            }
+                            decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice);
+                            if (order.Price < price)
+                            {
+                                _brokerAdapterRouter.Cancel(order);
+                                order.Status = OrderStatus.Filled;
+                                order.Size = order.FilledSize;
+                                if (order.FilledSize < config.MinSize)
+                                    _activeOrders.Remove(order);
+                                SpreadAnalysisResult result = new SpreadAnalysisResult
+                                {
+                                    BestOrderZb = new Quote(Broker.Zb, QuoteSide.Ask, price, bestAskZb.BasePrice, _activeOrders[0].FilledSize - ZbFilledSize),
+                                };
+                                ExecuteOrderZb(result);
+                                continue;
+                            }
                         }
-                        decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice);
-                        if (order.Price > price)
+                        else
                         {
-                            _brokerAdapterRouter.Cancel(order);
-                            order.Status = OrderStatus.Filled;
-                            order.Size = order.FilledSize;
-                            if (order.FilledSize < config.MinSize)
-                                _activeOrders.Remove(order);
+                            var bestAskZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Ask).Where(q => q.Broker == Broker.Zb)
+                                .OrderByDescending(q => q.Price).FirstOrDefault();
+                            if (bestAskZb == null)
+                            {
+                                throw new InvalidOperationException(Resources.NoBestAskWasFound);
+                            }
+                            decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice);
+                            if (order.Price > price)
+                            {
+                                _brokerAdapterRouter.Cancel(order);
+                                order.Status = OrderStatus.Filled;
+                                order.Size = order.FilledSize;
+                                if (order.FilledSize < config.MinSize)
+                                    _activeOrders.Remove(order);
+                                SpreadAnalysisResult result = new SpreadAnalysisResult
+                                {
+                                    BestOrderZb = new Quote(Broker.Zb, QuoteSide.Ask, price, bestAskZb.BasePrice, _activeOrders[0].FilledSize),
+                                };
+                                ExecuteOrderZb(result);
+                                continue;
+                            }
                         }
-                        SpreadAnalysisResult result = new SpreadAnalysisResult
-                        {
-                            BestOrderZb = new Quote(Broker.Zb, QuoteSide.Ask, price, bestAskZb.BasePrice, _activeOrders[0].FilledSize),
-                        };
-                        ExecuteOrderZb(result);
-                        Sleep(config.OrderStatusCheckInterval);
-                        continue;
                     }
                 }
 
@@ -391,21 +391,21 @@ namespace Rinjani
                     for (int j = 1; j < _activeOrders.Count; j++)
                     {
                         ZbFilledSize += _activeOrders[j].FilledSize;
-                        _spendCash += _activeOrders[j].FilledSize * _activeOrders[j].AverageFilledPrice;
+                        _spendCash += _activeOrders[j].FilledSize * _activeOrders[j].Price;
                     }
                     ZbAverageFilledPrice = _spendCash / ZbFilledSize;
                     decimal profit = 0;
                     if (order.Side == OrderSide.Buy)
                     {
-                        profit = Math.Round(_activeOrders[0].FilledSize * _activeOrders[0].AverageFilledPrice - _spendCash);
+                        profit = Math.Round(_activeOrders[0].FilledSize * _activeOrders[0].Price - _spendCash);
                         Log.Info(Resources.BuyFillPriceIs, ZbAverageFilledPrice);
-                        Log.Info(Resources.SellFillPriceIs, _activeOrders[0].AverageFilledPrice);
+                        Log.Info(Resources.SellFillPriceIs, _activeOrders[0].Price);
                     }
                     else
                     {
-                        profit = Math.Round(_spendCash - _activeOrders[0].FilledSize * _activeOrders[0].AverageFilledPrice);
+                        profit = Math.Round(_spendCash - _activeOrders[0].FilledSize * _activeOrders[0].Price);
                         Log.Info(Resources.SellFillPriceIs, ZbAverageFilledPrice);
-                        Log.Info(Resources.BuyFillPriceIs, _activeOrders[0].AverageFilledPrice);
+                        Log.Info(Resources.BuyFillPriceIs, ZbAverageFilledPrice);
                     }
                     Log.Info(Resources.BothLegsAreSuccessfullyFilled);                   
                     Log.Info(Resources.ProfitIs, profit);

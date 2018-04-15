@@ -83,6 +83,7 @@
     <Compile Include="BrokerApiTest.cs" />
     <Compile Include="QuoineBrokerAdapterTest.cs" />
     <Compile Include="UtilTest.cs" />
+    <Compile Include="UtilTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

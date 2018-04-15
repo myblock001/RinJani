@@ -12,15 +12,16 @@ namespace Rinjani.Hpx
         public int status { get; set; }
         public decimal total_amount { get; set; }
         public decimal trade_amount { get; set; }
-        public double trade_date { get; set; }
+        public string trade_date { get; set; }
         public decimal trade_money { get; set; }
+        public decimal trade_price { get; set; }
         public int type { get; set; }
 
         public void SetOrder(Order order)
         {
             order.BrokerOrderId = id;
             order.FilledSize = trade_amount;
-            order.CreationTime = Util.UnixTimeStampToDateTime(trade_date);
+            order.CreationTime = Convert.ToDateTime(trade_date);
             if (order.FilledSize == order.Size)
             {
                 order.Status = OrderStatus.Filled;

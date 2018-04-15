@@ -11,7 +11,7 @@ namespace Rinjani
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private readonly IBrokerAdapterRouter _brokerAdapterRouter;
         private readonly IConfigStore _configStore;
-        private readonly ITimer _timer;
+        //private readonly ITimer _timer;
         private bool _isRefreshing;
 
         public BalanceService(IConfigStore configStore, IBrokerAdapterRouter brokerAdapterRouter,
@@ -19,9 +19,9 @@ namespace Rinjani
         {
             _configStore = configStore ?? throw new ArgumentNullException(nameof(configStore));
             _brokerAdapterRouter = brokerAdapterRouter ?? throw new ArgumentNullException(nameof(brokerAdapterRouter));
-            _timer = timer;
-            Util.StartTimer(timer, _configStore.Config.BalanceRefreshInterval, OnTimerTriggered);
-            Refresh();
+            //_timer = timer;
+            //Util.StartTimer(timer, _configStore.Config.BalanceRefreshInterval, OnTimerTriggered);
+            //Refresh();
         }
 
         public IDictionary<Broker, BrokerBalance> BalanceMap { get; private set; } =
@@ -29,7 +29,7 @@ namespace Rinjani
 
         public void Dispose()
         {
-            _timer?.Dispose();
+            //_timer?.Dispose();
         }
 
         private void OnTimerTriggered(object sender, ElapsedEventArgs e)
@@ -72,6 +72,11 @@ namespace Rinjani
                 Log.Info(balance.Value);
             }
             Log.Info(Util.Hr(50));
+        }
+
+        public void GetBalances()
+        {
+            Refresh();
         }
 
         private BrokerBalance GetBalance(Broker broker)

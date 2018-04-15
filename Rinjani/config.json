@@ -1,14 +1,14 @@
 // Please rename config_default.json to config.json
 {
   "DemoMode": "false",
-  "PriceMergeSize": "0.001",
-  "MaxSize": "1",
+  "PriceMergeSize": "0.01",
+  "MaxSize": "0.01",
   "MinSize": "0.01",
   "ArbitragePoint": "1", //套利开启点 百分比
   "CancelPoint": "0.1", //取消点 百分比
   "StopPoint": "0.1", //止损点 百分比
   "IterationInterval": "2000",
-  "BalanceRefreshInterval": "3000",
+  "BalanceRefreshInterval": "4000",
   "SleepAfterSend": "3000",
   "MaxRetryCount": "1000",
   "OrderStatusCheckInterval": "2000",
@@ -16,15 +16,15 @@
     {
       "Broker": "Zb",
       "Enabled": "true",
-      "Key": "1e37d244-00a5-4e3e-b0a0-05748ef006f6",
-      "Secret": "0a70a943-48f6-4f67-beba-55ac98a1f07c",
+      "Key": "ebb1fb12-0e1c-4031-9224-386dfab470eb",
+      "Secret": "f774d735-bb49-4ccd-a1de-f686d9bec27b",
       "CashMarginType": "Cash"
     },
     {
       "Broker": "Hpx",
       "Enabled": "true",
-      "Key": "ak280878df02ae42fc",
-      "Secret": "42ece95a04414380af5914731fa07d2c",
+      "Key": "aka0c2e133b1ff4367",
+      "Secret": "4513c68f0c324127912c55fe21d11ffe",
       "CashMarginType": "Cash"
     }
   ]

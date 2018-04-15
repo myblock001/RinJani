@@ -40,10 +40,10 @@ namespace Rinjani.Hpx
             }
             SendOrderParam param = new SendOrderParam(order);
             var reply = Send(param);
-            if(reply.code.Trim()!="1000")
+            if (reply.code.Trim() != "0000")
             {
                 order.Status = OrderStatus.Rejected;
-                Log.Info("Hpx Send: "+reply.message);
+                Log.Info("Hpx Send: " + reply.message);
                 return;
             }
             order.BrokerOrderId = reply.id;
@@ -55,6 +55,8 @@ namespace Rinjani.Hpx
         public void Refresh(Order order)
         {
             var reply = GetOrderState(order.BrokerOrderId);
+            if (reply == null)
+                return;
             reply.SetOrder(order);
         }
 
@@ -117,7 +119,7 @@ namespace Rinjani.Hpx
         private SendReply Send(SendOrderParam param)
         {
             var path = "/api/v2/order?";
-            int tradetype = param.side == "buy" ? 1 : 0;
+            int tradetype = param.side == "buy" ? 0 : 1;
             string body = "method=order&accesskey=" + _config.Key + $"&amount={param.quantity}&currency=hsr_cnyt&price={param.price}&tradeType={tradetype}";
             path += body;
             var req = BuildRequest(path, "GET", body);
@@ -126,7 +128,7 @@ namespace Rinjani.Hpx
             if (response == null || response.StatusCode == 0)
             {
                 Log.Debug($"Hpx Send response is null or failed ...");
-                return new SendReply() { code ="-1" };
+                return new SendReply() { code = "-1" };
             }
             JObject j = JObject.Parse(response.Content);
             SendReply reply = j.ToObject<SendReply>();
@@ -141,12 +143,13 @@ namespace Rinjani.Hpx
             var req = BuildRequest(path, "GET", body);
             RestUtil.LogRestRequest(req);
             var response = _restClient.Execute(req);
-            if (response == null || response.StatusCode == 0)
+            if (response == null || response.StatusCode == 0|| response.Content.IndexOf("total_amount")<0)
             {
                 Log.Debug($"Hpx GetOrderState response is null or failed ...");
                 return null;
             }
             JObject j = JObject.Parse(response.Content);
+            j = JObject.Parse(j["data"].ToString());
             OrderStateReply reply = j.ToObject<OrderStateReply>();
             return reply;
         }
