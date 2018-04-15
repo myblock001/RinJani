@@ -8,8 +8,7 @@
   "CancelPoint": "0.1", //取消点 百分比
   "StopPoint": "0.1", //止损点 百分比
   "IterationInterval": "2000",
-  "BalanceRefreshInterval": "4000",
-  "SleepAfterSend": "3000",
+  "SleepAfterSend": "2000",
   "MaxRetryCount": "1000",
   "OrderStatusCheckInterval": "2000",
   "Brokers": [

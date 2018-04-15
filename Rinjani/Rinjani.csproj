@@ -109,7 +109,6 @@
     <Compile Include="Interface\IBalanceService.cs" />
     <Compile Include="OrderStatus.cs" />
     <Compile Include="OrderType.cs" />
-    <Compile Include="Position.cs" />
     <Compile Include="BalanceService.cs" />
     <Compile Include="BrokerConfig.cs" />
     <Compile Include="ConfigRoot.cs" />

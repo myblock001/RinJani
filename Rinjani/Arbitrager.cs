@@ -98,6 +98,7 @@ namespace Rinjani
             }
             decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice) + 0.01m;
             decimal invertedSpread = bestBidHpx.Price - price;
+
             decimal availableVolume = Util.RoundDown(Math.Min(bestAskZb.Volume, bestBidHpx.Volume), 3);
             
             var balanceMap = _positionService.BalanceMap;
@@ -130,7 +131,7 @@ namespace Rinjani
             {
                 return;
             }
-            decimal price = Math.Max(bestBidZb.Price, bestBidZb.BasePrice);
+            decimal price = Math.Max(bestBidZb.Price, bestBidZb.BasePrice) - 0.01m; 
             SpreadAnalysisResult result = new SpreadAnalysisResult
             {
                 BestOrderZb = new Quote(Broker.Zb, QuoteSide.Ask, price, bestBidZb.BasePrice, _activeOrders[0].FilledSize),
@@ -149,10 +150,10 @@ namespace Rinjani
             {
                 return;
             }
-            decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice);
+            decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice) + 0.01m;
             SpreadAnalysisResult result = new SpreadAnalysisResult
             {
-                BestOrderZb = new Quote(Broker.Zb, QuoteSide.Ask, price, bestAskZb.BasePrice, _activeOrders[0].FilledSize),
+                BestOrderZb = new Quote(Broker.Zb, QuoteSide.Bid, price, bestAskZb.BasePrice, _activeOrders[0].FilledSize),
             };
             ExecuteOrderZb(result);
             return;
@@ -161,10 +162,16 @@ namespace Rinjani
         private void Arbitrage()
         {
             Log.Info(Resources.LookingForOpportunity);
-            if (_positionService.BalanceMap.Count<2)
+            if (_positionService.BalanceMap.Count < 2)
+            {
                 _positionService.GetBalances();
-            if (_positionService.BalanceMap[Broker.Hpx] == null || _positionService.BalanceMap[Broker.Zb] == null)
                 return;
+            }
+            if (_positionService.BalanceMap[Broker.Hpx] == null || _positionService.BalanceMap[Broker.Zb] == null)
+            {
+                _positionService.GetBalances();
+                return;
+            }
             if (_activeOrders.Count == 0)
             {
                 ZbFilledSize = 0;
@@ -184,7 +191,6 @@ namespace Rinjani
                 CheckOrderStateZb();
                 _positionService.GetBalances();
             }
-            Log.Info(Resources.LookingForOpportunity);
             _activeOrders.Clear();
         }
 
@@ -196,12 +202,6 @@ namespace Rinjani
             var availableVolume = result.AvailableVolume;
             var targetVolume = result.TargetVolume;
             var targetProfit = result.TargetProfit;
-
-            Log.Info("{0,-17}: {1}", "Hpx Order ", bestOrderHpx);
-            Log.Info("{0,-17}: {1}", Resources.Spread, -invertedSpread);
-            Log.Info("{0,-17}: {1}", Resources.AvailableVolume, availableVolume);
-            Log.Info("{0,-17}: {1}", Resources.TargetVolume, targetVolume);
-            Log.Info("{0,-17}: {1}", Resources.ExpectedProfit, targetProfit);
 
             if (invertedSpread <= 0)
             {
@@ -222,7 +222,14 @@ namespace Rinjani
                 return;
             }
 
-            Log.Info(Resources.FoundArbitrageOppotunity);
+            Log.Info(string.Format("套利方向 Broker1 {0}", bestOrderHpx.Side==QuoteSide.Ask?"卖单":"买单"));
+            Log.Info(string.Format("Broker1价格 {0},  Broker2基准价 {1}", bestOrderHpx.Price, result.BestOrderZb.BasePrice));
+            Log.Info(string.Format("套利点{0}%,差异点{1}%", config.ArbitragePoint, (100*invertedSpread/ result.BestOrderZb.BasePrice).ToString("0.00")));
+            //Log.Info("{0,-17}: {1}", "Hpx Order ", bestOrderHpx);
+            //Log.Info("{0,-17}: {1}", Resources.Spread, -invertedSpread);
+            //Log.Info("{0,-17}: {1}", Resources.AvailableVolume, availableVolume);
+            //Log.Info("{0,-17}: {1}", Resources.TargetVolume, targetVolume);
+            //Log.Info("{0,-17}: {1}", Resources.ExpectedProfit, targetProfit);
 
             Log.Info(Resources.SendingOrderTargettingQuote, bestOrderHpx);
             SendOrder(bestOrderHpx, targetVolume, OrderType.Limit);
@@ -232,6 +239,8 @@ namespace Rinjani
                 _activeOrders.Clear();
                 return;
             }
+            Sleep(config.SleepAfterSend);
+            exeTimes = 0;
             CheckOrderStateHpx();
         }
 
@@ -258,8 +267,10 @@ namespace Rinjani
             Sleep(config.SleepAfterSend);
         }
 
+        int exeTimes = 0;
         private void CheckOrderStateHpx()
         {
+            exeTimes++;
             var order = _activeOrders[0];
             var config = _configStore.Config;
             try
@@ -278,12 +289,11 @@ namespace Rinjani
                     Log.Warn(Resources.BuyLegIsNotFilledYetPendingSizeIs, order.PendingSize);
                 else
                     Log.Warn(Resources.SellLegIsNotFilledYetPendingSizeIs, order.PendingSize);
-            }
 
-            if (order.Status != OrderStatus.Filled)
-            {
                 if (order.FilledSize < config.MinSize)
                 {
+                    if (exeTimes < 2)
+                        CheckOrderStateHpx();
                     _brokerAdapterRouter.Cancel(order);
                     _activeOrders.Clear();
                     return;
