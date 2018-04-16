@@ -21,7 +21,6 @@ namespace Rinjani
         public int QuoteRefreshInterval { get; set; } = 2000;
         public List<BrokerConfig> Brokers { get; set; }
         public int MaxRetryCount { get; set; } = 30;
-        public bool CancelAllOrders { get; set; }
         public int OrderStatusCheckInterval { get; set; } = 3000;
     }
 }

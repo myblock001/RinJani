@@ -12,9 +12,8 @@
   "CancelPoint": "0.1", //取消点 百分比
   "StopPoint": "0.1", //止损点 百分比
   "IterationInterval": "2000",
-  "SleepAfterSend": "2000",
+  "SleepAfterSend": "1000",
   "MaxRetryCount": "1000",
-  "CancelAllOrders": "true",//删除HPX所有下单
   "OrderStatusCheckInterval": "2000",
   "Brokers": [
     {

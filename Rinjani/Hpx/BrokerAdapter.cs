@@ -40,6 +40,12 @@ namespace Rinjani.Hpx
             }
             SendOrderParam param = new SendOrderParam(order);
             var reply = Send(param);
+            if (reply.code.Trim() == "3001")
+            {
+                order.BrokerOrderId = "0x3fffff";//余额不足
+                return;
+            }
+
             if (reply.code.Trim() != "0000")
             {
                 order.Status = OrderStatus.Rejected;
@@ -265,6 +271,7 @@ namespace Rinjani.Hpx
             catch(Exception ex)
             {
                 Log.Info("HttpPost Failed:"+ex.Message);
+                Log.Debug("HttpPost Failed:" + ex.Message);
                 return "";
             }
         }
