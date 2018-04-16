@@ -37,6 +37,11 @@ namespace Rinjani
             _brokerAdapterMap[order.Broker].Refresh(order);
         }
 
+        public string GetOrdersState(int pageIndex, int tradeType, Broker broker)
+        {
+            return _brokerAdapterMap[broker].GetOrdersState(pageIndex,tradeType);
+        }
+
         public BrokerBalance GetBalance(Broker broker)
         {
             return _brokerAdapterMap[broker].GetBalance();

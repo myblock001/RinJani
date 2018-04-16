@@ -1,6 +1,10 @@
 // Please rename config_default.json to config.json
 {
   "DemoMode": "false",
+  "Arbitrage": "false", //套利功能
+  "LiquidBot": "true", //流动性机器人功能
+  "VolumeRatio": "20", //下单量比例20%,LiquidBot为true时有效
+  "RemovalRatio": "1", //去除比例，[-RemovalRatio,RemovalRatio]之间的订单不搬,LiquidBot为true时有效
   "PriceMergeSize": "0.01",
   "MaxSize": "0.01",
   "MinSize": "0.01",
@@ -10,6 +14,7 @@
   "IterationInterval": "2000",
   "SleepAfterSend": "2000",
   "MaxRetryCount": "1000",
+  "CancelAllOrders": "true",//删除HPX所有下单
   "OrderStatusCheckInterval": "2000",
   "Brokers": [
     {

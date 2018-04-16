@@ -138,7 +138,7 @@ namespace Rinjani.Zb
             try
             {
                 Log.Debug($"Getting depth from {_config.Broker}...");
-                var path = "data/v1/depth?market=hsr_qc&size=3";
+                var path = "data/v1/depth?market=hsr_qc&size=50";
                 var req = RestUtil.CreateJsonRestRequest(path);
                 SetBaseUrl("quote");
                 var response = _restClient.Execute(req);
@@ -196,6 +196,28 @@ namespace Rinjani.Zb
             JObject j = JObject.Parse(response.Content);
             OrderStateReply reply = j.ToObject<OrderStateReply>();
             return reply;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tradeType"> 挂单类型 1/0[buy/sell]</param>
+        /// <returns></returns>
+        public string GetOrdersState(int pageIndex, int tradeType)
+        {
+            var path = "/api/getOrders?";
+            string body = "accesskey=" + _config.Key + $"&currency=hsr_qc&method=getOrders&pageIndex={pageIndex}&tradeType={tradeType}";
+            path += body;
+            var req = BuildRequest(path, "GET", body);
+            RestUtil.LogRestRequest(req);
+            SetBaseUrl("trade");
+            var response = _restClient.Execute(req);
+            if (response == null || response.StatusCode == 0)
+            {
+                Log.Debug($"Zb GetOrderaState response is null or failed ...");
+                return null;
+            }
+            return response.Content;
         }
 
         private void Cancel(string orderId)

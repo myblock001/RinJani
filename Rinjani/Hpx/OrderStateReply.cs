@@ -33,4 +33,9 @@ namespace Rinjani.Hpx
             order.LastUpdated = DateTime.Now;
         }
     }
+
+    public class OrdersStateReply
+    {
+        public List<OrderStateReply> ordersState{ get; set; }
+    }
 }

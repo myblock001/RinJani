@@ -4,6 +4,8 @@ using System.Linq;
 using NLog;
 using static System.Threading.Thread;
 using Rinjani.Properties;
+using Newtonsoft.Json.Linq;
+using Rinjani.Hpx;
 
 namespace Rinjani
 {
@@ -75,7 +77,7 @@ namespace Rinjani
                     AvailableVolume = availableVolume,
                     TargetVolume = targetVolume,
                 };
-                ExecuteOrderHpx(result);
+                HpxExecuteOrder(result);
                 return;
             }
         }
@@ -116,7 +118,7 @@ namespace Rinjani
                     AvailableVolume = availableVolume,
                     TargetVolume = targetVolume,
                 };
-                ExecuteOrderHpx(result);
+                HpxExecuteOrder(result);
                 return;
             }
         }
@@ -136,7 +138,7 @@ namespace Rinjani
             {
                 BestOrderZb = new Quote(Broker.Zb, QuoteSide.Ask, price, bestBidZb.BasePrice, _activeOrders[0].FilledSize),
             };
-            ExecuteOrderZb(result);
+            ZbExecuteOrder(result);
             return;
         }
 
@@ -155,46 +157,11 @@ namespace Rinjani
             {
                 BestOrderZb = new Quote(Broker.Zb, QuoteSide.Bid, price, bestAskZb.BasePrice, _activeOrders[0].FilledSize),
             };
-            ExecuteOrderZb(result);
+            ZbExecuteOrder(result);
             return;
         }
 
-        private void Arbitrage()
-        {
-            Log.Info(Resources.LookingForOpportunity);
-            if (_positionService.BalanceMap.Count < 2)
-            {
-                _positionService.GetBalances();
-                return;
-            }
-            if (_positionService.BalanceMap[Broker.Hpx] == null || _positionService.BalanceMap[Broker.Zb] == null)
-            {
-                _positionService.GetBalances();
-                return;
-            }
-            if (_activeOrders.Count == 0)
-            {
-                ZbFilledSize = 0;
-                HpxBuyOrderDeal();
-            }
-            if (_activeOrders.Count == 0)
-            {
-                ZbFilledSize = 0;
-                HpxSellOrderDeal();
-            }
-            if (_activeOrders.Count >= 1)
-            {
-                if (_activeOrders[0].Side == OrderSide.Buy)
-                    ZbSellOrderDeal();
-                else
-                    ZbBuyOrderDeal();
-                CheckOrderStateZb();
-                _positionService.GetBalances();
-            }
-            _activeOrders.Clear();
-        }
-
-        private void ExecuteOrderHpx(SpreadAnalysisResult result)
+        private void HpxExecuteOrder(SpreadAnalysisResult result)
         {
             var config = _configStore.Config;
             var bestOrderHpx = result.BestOrderHpx;
@@ -225,11 +192,6 @@ namespace Rinjani
             Log.Info(string.Format("套利方向 Broker1 {0}", bestOrderHpx.Side==QuoteSide.Ask?"卖单":"买单"));
             Log.Info(string.Format("Broker1价格 {0},  Broker2基准价 {1}", bestOrderHpx.Price, result.BestOrderZb.BasePrice));
             Log.Info(string.Format("套利点{0}%,差异点{1}%", config.ArbitragePoint, (100*invertedSpread/ result.BestOrderZb.BasePrice).ToString("0.00")));
-            //Log.Info("{0,-17}: {1}", "Hpx Order ", bestOrderHpx);
-            //Log.Info("{0,-17}: {1}", Resources.Spread, -invertedSpread);
-            //Log.Info("{0,-17}: {1}", Resources.AvailableVolume, availableVolume);
-            //Log.Info("{0,-17}: {1}", Resources.TargetVolume, targetVolume);
-            //Log.Info("{0,-17}: {1}", Resources.ExpectedProfit, targetProfit);
 
             Log.Info(Resources.SendingOrderTargettingQuote, bestOrderHpx);
             SendOrder(bestOrderHpx, targetVolume, OrderType.Limit);
@@ -241,10 +203,10 @@ namespace Rinjani
             }
             Sleep(config.SleepAfterSend);
             exeTimes = 0;
-            CheckOrderStateHpx();
+            HpxCheckOrderState();
         }
 
-        private void ExecuteOrderZb(SpreadAnalysisResult result)
+        private void ZbExecuteOrder(SpreadAnalysisResult result)
         {
             var config = _configStore.Config;
             var bestOrderZb = result.BestOrderZb;
@@ -262,13 +224,13 @@ namespace Rinjani
             {
                 Sleep(config.SleepAfterSend);
                 Log.Info("Zb Order failure,Re-order", bestOrderZb);
-                ExecuteOrderZb(result);
+                ZbExecuteOrder(result);
             }
             Sleep(config.SleepAfterSend);
         }
 
         int exeTimes = 0;
-        private void CheckOrderStateHpx()
+        private void HpxCheckOrderState()
         {
             exeTimes++;
             var order = _activeOrders[0];
@@ -293,7 +255,7 @@ namespace Rinjani
                 if (order.FilledSize < config.MinSize)
                 {
                     if (exeTimes < 2)
-                        CheckOrderStateHpx();
+                        HpxCheckOrderState();
                     _brokerAdapterRouter.Cancel(order);
                     _activeOrders.Clear();
                     return;
@@ -315,7 +277,7 @@ namespace Rinjani
 
         private decimal ZbFilledSize = 0;
         private decimal ZbAverageFilledPrice = 0;
-        private void CheckOrderStateZb()
+        private void ZbCheckOrderState()
         {
             var config = _configStore.Config;
             foreach (var i in Enumerable.Range(1, config.MaxRetryCount))
@@ -367,7 +329,7 @@ namespace Rinjani
                                 {
                                     BestOrderZb = new Quote(Broker.Zb, QuoteSide.Ask, price, bestAskZb.BasePrice, _activeOrders[0].FilledSize - ZbFilledSize),
                                 };
-                                ExecuteOrderZb(result);
+                                ZbExecuteOrder(result);
                                 continue;
                             }
                         }
@@ -391,7 +353,7 @@ namespace Rinjani
                                 {
                                     BestOrderZb = new Quote(Broker.Zb, QuoteSide.Ask, price, bestAskZb.BasePrice, _activeOrders[0].FilledSize),
                                 };
-                                ExecuteOrderZb(result);
+                                ZbExecuteOrder(result);
                                 continue;
                             }
                         }
@@ -473,5 +435,274 @@ namespace Rinjani
             _brokerAdapterRouter.Send(order);
             _activeOrders.Add(order);
         }
+
+        private void Arbitrage()
+        {
+            //套利功能
+            if (_configStore.Config.Arbitrage)
+            {
+                Log.Info(Resources.LookingForOpportunity);
+                if (_positionService.BalanceMap.Count < 2)
+                {
+                    _positionService.GetBalances();
+                    return;
+                }
+                if (_positionService.BalanceMap[Broker.Hpx] == null || _positionService.BalanceMap[Broker.Zb] == null)
+                {
+                    _positionService.GetBalances();
+                    return;
+                }
+                if (_activeOrders.Count == 0)
+                {
+                    ZbFilledSize = 0;
+                    HpxBuyOrderDeal();
+                }
+                if (_activeOrders.Count == 0)
+                {
+                    ZbFilledSize = 0;
+                    HpxSellOrderDeal();
+                }
+                if (_activeOrders.Count >= 1)
+                {
+                    if (_activeOrders[0].Side == OrderSide.Buy)
+                        ZbSellOrderDeal();
+                    else
+                        ZbBuyOrderDeal();
+                    ZbCheckOrderState();
+                    _positionService.GetBalances();
+                }
+                _activeOrders.Clear();
+            }
+
+            //流动性机器人功能
+            if (_configStore.Config.LiquidBot)
+            {
+                if(_configStore.Config.CancelAllOrders)
+                {
+                    GetOrdersState(1, 0, Broker.Hpx);
+                    Sleep(_configStore.Config.SleepAfterSend);
+                    GetOrdersState(1, 1, Broker.Hpx);
+                    foreach(var s in ordersState)
+                    {
+                        Order o = new Order();
+                        o.BrokerOrderId = s.id;
+                        o.Broker = Broker.Hpx;
+                        s.SetOrder(o);
+                        Log.Info("删除订单...");
+                        _brokerAdapterRouter.Cancel(o);
+                        Sleep(_configStore.Config.SleepAfterSend);
+                    }
+                    Environment.Exit(-1);
+                }
+                LiquidBot();
+            }
+        }
+
+        public List<OrderStateReply> ordersState;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tradeType">0/1[buy/sell]</param>
+        /// <param name="broker"></param>
+        public void GetOrdersState(int pageIndex, int tradeType, Broker broker)
+        {
+            var brokerConfig = _configStore.Config.Brokers.First(x => x.Broker == Broker.Hpx);
+            string response = _brokerAdapterRouter.GetOrdersState(pageIndex, tradeType, broker);
+            JObject j = JObject.Parse(response);
+            JArray ja = JArray.Parse(j["data"].ToString());
+            ordersState = ja.ToObject<List<OrderStateReply>>();
+        }
+
+        private readonly List<Order> _pengdingOrdersHpx = new List<Order>();
+        private void LiquidBot()
+        {
+            var config = _configStore.Config;
+            var bestBidHpx = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Bid)
+                .Where(q => q.Broker == Broker.Hpx)
+                .OrderByDescending(q => q.Price).FirstOrDefault();
+            var bestAskHpx = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Ask)
+                .Where(q => q.Broker == Broker.Hpx)
+                .OrderBy(q => q.Price).FirstOrDefault();
+
+            var bestBidZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Bid)
+                .Where(q => q.Broker == Broker.Zb)
+                .OrderByDescending(q => q.Price).FirstOrDefault();
+            decimal highestBidPrice = bestBidZb.Price * (100 - config.RemovalRatio) / 100;
+            var bestAskZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Ask)
+                .Where(q => q.Broker == Broker.Zb)
+                .OrderBy(q => q.Price).FirstOrDefault();
+            decimal lowestAskPrice = bestAskZb.Price * (100 + config.RemovalRatio) / 100;
+
+            var cpyBidZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Bid)
+                .Where(q => q.Broker == Broker.Zb).Where(q => q.Price < highestBidPrice)
+                .OrderByDescending(q => q.Price);
+            var cpyAskZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Ask)
+                .Where(q => q.Broker == Broker.Zb).Where(q => q.Price > lowestAskPrice)
+                .OrderBy(q => q.Price);
+
+            var allBuyOrderHpx = _pengdingOrdersHpx.Where(q => q.Side == OrderSide.Buy)
+                .OrderByDescending(q => q.Price);
+
+            if(allBuyOrderHpx.Count()==0)
+            {
+                foreach(var bid in cpyBidZb)
+                {
+                    bid.Broker = Broker.Hpx;
+                    SendOrder(bid, bid.Volume*config.VolumeRatio/100, OrderType.Limit);
+                    Log.Info($"正在复制买单，当前价格{bid.Price},当前数量{bid.Volume * config.VolumeRatio / 100}");
+                    //SendOrder(bid, 0.01m, OrderType.Limit);
+
+                    if (_activeOrders[_activeOrders.Count-1].BrokerOrderId == null)
+                    {
+                        _activeOrders.RemoveAt(_activeOrders.Count-1);
+                    }
+                    _pengdingOrdersHpx.Add(_activeOrders[_activeOrders.Count - 1]);
+                    _activeOrders.Clear();
+                    Sleep(config.SleepAfterSend);
+                }
+            }
+            else
+            {
+                bool exe_flag = true;
+                GetOrdersState(1, 0, Broker.Hpx);
+                while (exe_flag)
+                {
+                    foreach (var order in allBuyOrderHpx)
+                    {
+                        var orderState = ordersState.Where(q => order.BrokerOrderId == q.id).FirstOrDefault();
+                        decimal lastPendingSize = order.PendingSize;
+                        orderState.SetOrder(order);
+                        decimal curFilledSize = lastPendingSize - order.PendingSize;
+                        if (curFilledSize > config.MinSize)
+                        {
+                            Order new_order = new Order(order.Broker, order.Side, order.Size, order.Price, order.CashMarginType,
+                            order.Type, order.LeverageLevel);
+                            new_order.Size = curFilledSize;
+                            new_order.FilledSize = curFilledSize;
+                            new_order.BrokerOrderId = order.BrokerOrderId;
+                            _activeOrders.Add(new_order);
+                            Log.Info($"Hpx订单部分成交，成交价格{new_order.Price},成交数量{new_order.FilledSize},Zb开始下单");
+                            ZbSellOrderDeal();
+                            ZbCheckOrderState();
+                            GetOrdersState(1, 0, Broker.Hpx);
+                            exe_flag = true;
+                            break;
+                        }
+                        if (order.Price > highestBidPrice)
+                        {
+                            Log.Info($"Hpx买单价格为{order.Price},不符合条件，删除");
+                            _brokerAdapterRouter.Cancel(order);
+                            _pengdingOrdersHpx.Remove(order);
+                            allBuyOrderHpx = _pengdingOrdersHpx.Where(q => q.Side == OrderSide.Buy)
+                             .OrderByDescending(q => q.Price);
+                            exe_flag = true;
+                            break;
+                        }
+                        exe_flag = false;
+                    }
+                }
+
+                var bestBuyOrderHpx = _pengdingOrdersHpx.Where(q => q.Side == OrderSide.Buy)
+                    .OrderByDescending(q => q.Price).FirstOrDefault();
+                foreach (var bid in cpyBidZb)
+                {
+                    if (bid.Price < bestBuyOrderHpx.Price)
+                        continue;
+                    bid.Broker = Broker.Hpx;
+                    SendOrder(bid, bid.Volume*config.VolumeRatio/100, OrderType.Limit);
+                    Log.Info($"正在复制买单，当前价格{bid.Price},当前数量{bid.Volume * config.VolumeRatio / 100}");
+
+                    if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
+                    {
+                        _activeOrders.RemoveAt(_activeOrders.Count - 1);
+                    }
+                    _pengdingOrdersHpx.Add(_activeOrders[_activeOrders.Count - 1]);
+                    _activeOrders.Clear();
+                    Sleep(config.SleepAfterSend);
+                }
+            }
+
+            var allSellOrderHpx = _pengdingOrdersHpx.Where(q => q.Side == OrderSide.Sell)
+                .OrderBy(q => q.Price);
+
+            if (allSellOrderHpx.Count() == 0)
+            {
+                foreach (var ask in cpyAskZb)
+                {
+                    ask.Broker = Broker.Hpx;
+                    Log.Info($"正在复制卖单，当前价格{ask.Price},当前数量{ask.Volume * config.VolumeRatio / 100}");
+                    SendOrder(ask, ask.Volume * config.VolumeRatio / 100, OrderType.Limit);
+                    //SendOrder(ask, 0.01m, OrderType.Limit);
+                    
+                    if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
+                    {
+                        _activeOrders.RemoveAt(_activeOrders.Count - 1);
+                    }
+                    _pengdingOrdersHpx.Add(_activeOrders[_activeOrders.Count - 1]);
+                    _activeOrders.Clear();
+                    Sleep(config.SleepAfterSend);
+                }
+            }
+            else
+            {
+                bool exe_flag = true;
+                GetOrdersState(1, 1, Broker.Hpx);
+                while (exe_flag)
+                {
+                    foreach (var order in allSellOrderHpx)
+                    {
+                        var orderState = ordersState.Where(q => order.BrokerOrderId == q.id).FirstOrDefault();
+                        decimal lastPendingSize = order.PendingSize;
+                        orderState.SetOrder(order);
+                        decimal curFilledSize = lastPendingSize - order.PendingSize;
+                        if (curFilledSize > config.MinSize)
+                        {
+                            Order new_order = new Order(order.Broker, order.Side, order.Size, order.Price, order.CashMarginType,
+                            order.Type, order.LeverageLevel);
+                            new_order.Size = curFilledSize;
+                            new_order.FilledSize = curFilledSize;
+                            new_order.BrokerOrderId = order.BrokerOrderId;
+                            _activeOrders.Add(new_order);
+                            Log.Info($"Hpx订单部分成交，成交价格{new_order.Price},成交数量{new_order.FilledSize},Zb开始下单");
+                            ZbBuyOrderDeal();
+                            ZbCheckOrderState();
+                            exe_flag = true;
+                            GetOrdersState(1, 1, Broker.Hpx);
+                            break;
+                        }
+                        if (order.Price < lowestAskPrice)
+                        {
+                            Log.Info($"Hpx卖单价格为{order.Price},不符合条件，删除");
+                            _pengdingOrdersHpx.Remove(order);
+                            allSellOrderHpx = _pengdingOrdersHpx.Where(q => q.Side == OrderSide.Sell)
+                             .OrderBy(q => q.Price);
+                            exe_flag = true;
+                            break;
+                        }
+                        exe_flag = false;
+                    }
+                }
+
+                var bestShellOrderHpx = _pengdingOrdersHpx.Where(q => q.Side == OrderSide.Buy)
+                     .OrderByDescending(q => q.Price).FirstOrDefault();
+                foreach (var ask in cpyAskZb)
+                {
+                    if (ask.Price > bestShellOrderHpx.Price)
+                        continue;
+                    ask.Broker = Broker.Hpx;
+                    SendOrder(ask, ask.Volume * config.VolumeRatio / 100, OrderType.Limit);
+                    Log.Info($"正在复制卖单，当前价格{ask.Price},当前数量{ask.Volume * config.VolumeRatio / 100}");
+
+                    if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
+                    {
+                        _activeOrders.RemoveAt(_activeOrders.Count - 1);
+                    }
+                    _pengdingOrdersHpx.Add(_activeOrders[_activeOrders.Count - 1]);
+                    _activeOrders.Clear();
+                    Sleep(config.SleepAfterSend);
+                }
+            }
+        }    
     }
 }

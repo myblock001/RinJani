@@ -105,7 +105,7 @@ namespace Rinjani.Hpx
             try
             {
                 string url = "https://www.hpx.com/real/market/hsr_cnyt.html";
-                string param = "event=addChannel&channel=real_depth&exchangeTypeCode=hsr_cnyt&buysellcount=10&successcount=10&mergeType=1e-8&token=";
+                string param = "event=addChannel&channel=real_depth&exchangeTypeCode=hsr_cnyt&buysellcount=50&successcount=50&mergeType=1e-8&token=";
                 string content = HttpPost(url, param);
                 Log.Debug($"Received depth from {_config.Broker}.");
                 Depth depth = new Depth() { quotesJson = content };
@@ -169,6 +169,35 @@ namespace Rinjani.Hpx
             catch (Exception ex)
             {
                 Log.Debug($"Hpx GetOrderState Exception:" + ex.Message);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tradeType"> 挂单类型 1/0[buy/sell]</param>
+        /// <returns></returns>
+        public string GetOrdersState(int pageIndex, int tradeType)
+        {
+            try
+            {
+                var path = "/api/v2/getOrders?";
+                string body = "method=getOrders&accesskey=" + _config.Key + $"&tradeType={tradeType}&currency=hsr_cnyt&pageIndex=1&pageSize=100";
+                path += body;
+                var req = BuildRequest(path, "GET", body);
+                RestUtil.LogRestRequest(req);
+                var response = _restClient.Execute(req);
+                if (response == null || response.StatusCode == 0)
+                {
+                    Log.Debug($"Hpx GetOrderState response is null or failed ...");
+                    return null;
+                }
+                return response.Content;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug($"Hpx GetOrdersState Exception:" + ex.Message);
                 return null;
             }
         }
