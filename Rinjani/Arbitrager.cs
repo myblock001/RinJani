@@ -66,6 +66,8 @@ namespace Rinjani
             decimal allowedSizeHpx = balanceMap[bestAskHpx.Broker].Cash / bestAskHpx.Price;
             decimal allowedSizeZb = balanceMap[bestBidZb.Broker].Hsr;
             decimal targetVolume = new[] { availableVolume, config.MaxSize, allowedSizeHpx, allowedSizeZb }.Min();
+            if (targetVolume < config.MinSize)
+                return;
             targetVolume = Util.RoundDown(targetVolume, 2);
             if (invertedSpread / price > config.ArbitragePoint / 100)
             {
@@ -108,6 +110,8 @@ namespace Rinjani
             decimal allowedSizeZb = balanceMap[bestAskZb.Broker].Cash / bestAskZb.Price;
             decimal targetVolume = new[] { availableVolume, config.MaxSize, allowedSizeHpx, allowedSizeZb }.Min();
             targetVolume = Util.RoundDown(targetVolume, 2);
+            if (targetVolume < config.MinSize)
+                return;
             if (invertedSpread / price > config.ArbitragePoint / 100)
             {
                 SpreadAnalysisResult result = new SpreadAnalysisResult
@@ -497,7 +501,8 @@ namespace Rinjani
 
             //流动性机器人功能
             if (_configStore.Config.LiquidBot)
-            {               
+            {
+
                 LiquidBot();
             }
         }
@@ -513,11 +518,13 @@ namespace Rinjani
         {
             try
             {
+                Log.Debug($"GetOrdersState Start");
                 var brokerConfig = _configStore.Config.Brokers.First(x => x.Broker == Broker.Hpx);
                 string response = _brokerAdapterRouter.GetOrdersState(pageIndex, tradeType, broker);
                 JObject j = JObject.Parse(response);
                 JArray ja = JArray.Parse(j["data"].ToString());
                 ordersState = ja.ToObject<List<OrderStateReply>>();
+                Log.Debug($"GetOrdersState Stop");
             }
             catch(Exception ex)
             {
@@ -586,9 +593,10 @@ namespace Rinjani
                         _activeOrders.Clear();
                         Log.Info("Hpx买单余额不足");
                         Sleep(config.SleepAfterSend);
+                        _positionService.GetBalances();
+                        Sleep(config.SleepAfterSend);
                         break;
                     }
-
                     _pengdingOrdersHpx.Add(_activeOrders[_activeOrders.Count - 1]);
                     _activeOrders.Clear();
                     Sleep(config.SleepAfterSend);
@@ -612,6 +620,7 @@ namespace Rinjani
                         decimal curFilledSize = lastPendingSize - order.PendingSize;
                         if (curFilledSize > config.MinSize)
                         {
+                            _positionService.BalanceMap[Broker.Hpx].Cash -= curFilledSize * order.Price;
                             if (zbHsrBalance == 0)
                             {
                                 Sleep(config.SleepAfterSend);
@@ -647,6 +656,7 @@ namespace Rinjani
                     }
                 }
 
+                Sleep(config.SleepAfterSend);
                 var bestBuyOrderHpx = _pengdingOrdersHpx.Where(q => q.Side == OrderSide.Buy)
                     .OrderByDescending(q => q.Price).FirstOrDefault();
                 foreach (var bid in cpyBidZb)
@@ -661,6 +671,8 @@ namespace Rinjani
                     {
                         _activeOrders.Clear();
                         Log.Info("Hpx买单余额不足");
+                        Sleep(config.SleepAfterSend);
+                        _positionService.GetBalances();
                         Sleep(config.SleepAfterSend);
                         break;
                     }
@@ -706,6 +718,8 @@ namespace Rinjani
                         _activeOrders.Clear();
                         Log.Info("Hpx卖单余额不足");
                         Sleep(config.SleepAfterSend);
+                        _positionService.GetBalances();
+                        Sleep(config.SleepAfterSend);
                         break;
                     }
                     _pengdingOrdersHpx.Add(_activeOrders[_activeOrders.Count - 1]);
@@ -731,6 +745,7 @@ namespace Rinjani
                         decimal curFilledSize = lastPendingSize - order.PendingSize;
                         if (curFilledSize > config.MinSize)
                         {
+                            _positionService.BalanceMap[Broker.Hpx].Hsr -= curFilledSize;
                             if (zbCashBalance == 0)
                             {
                                 Sleep(config.SleepAfterSend);
@@ -768,6 +783,7 @@ namespace Rinjani
                     }
                 }
 
+                Sleep(config.SleepAfterSend);
                 var bestShellOrderHpx = _pengdingOrdersHpx.Where(q => q.Side == OrderSide.Buy)
                      .OrderByDescending(q => q.Price).FirstOrDefault();
                 foreach (var ask in cpyAskZb)
@@ -782,6 +798,8 @@ namespace Rinjani
                     {
                         _activeOrders.Clear();
                         Log.Info("Hpx卖单余额不足");
+                        Sleep(config.SleepAfterSend);
+                        _positionService.GetBalances();
                         Sleep(config.SleepAfterSend);
                         break;
                     }

@@ -110,12 +110,14 @@ namespace Rinjani.Hpx
         {
             try
             {
+                Log.Debug("Hpx FetchQuotes Begin");
                 string url = "https://www.hpx.com/real/market/hsr_cnyt.html";
                 string param = "event=addChannel&channel=real_depth&exchangeTypeCode=hsr_cnyt&buysellcount=50&successcount=50&mergeType=1e-8&token=";
                 string content = HttpPost(url, param);
                 Log.Debug($"Received depth from {_config.Broker}.");
                 Depth depth = new Depth() { quotesJson = content };
                 var quotes = depth.ToQuotes();
+                Log.Debug("Hpx FetchQuotes End");
                 return quotes ?? new List<Quote>();
             }
             catch(Exception ex)
@@ -129,6 +131,7 @@ namespace Rinjani.Hpx
         {
             try
             {
+                Log.Debug("Hpx Send Begin");
                 var path = "/api/v2/order?";
                 int tradetype = param.side == "buy" ? 0 : 1;
                 string body = "method=order&accesskey=" + _config.Key + $"&amount={param.quantity}&currency=hsr_cnyt&price={param.price}&tradeType={tradetype}";
@@ -143,6 +146,7 @@ namespace Rinjani.Hpx
                 }
                 JObject j = JObject.Parse(response.Content);
                 SendReply reply = j.ToObject<SendReply>();
+                Log.Debug("Hpx Send End");
                 return reply;
             }
             catch(Exception ex)
@@ -156,6 +160,7 @@ namespace Rinjani.Hpx
         {
             try
             {
+                Log.Debug("Hpx GetOrderState Begin");
                 var path = "/api/v2/getOrder?";
                 string body = "method=getOrder&accesskey=" + _config.Key + $"&id={id}&currency=hsr_cnyt";
                 path += body;
@@ -170,6 +175,7 @@ namespace Rinjani.Hpx
                 JObject j = JObject.Parse(response.Content);
                 j = JObject.Parse(j["data"].ToString());
                 OrderStateReply reply = j.ToObject<OrderStateReply>();
+                Log.Debug("Hpx GetOrderState End");
                 return reply;
             }
             catch (Exception ex)
@@ -188,6 +194,7 @@ namespace Rinjani.Hpx
         {
             try
             {
+                Log.Debug("Hpx GetOrdersState Begin");
                 var path = "/api/v2/getOrders?";
                 string body = "method=getOrders&accesskey=" + _config.Key + $"&tradeType={tradeType}&currency=hsr_cnyt&pageIndex=1&pageSize=100";
                 path += body;
@@ -199,6 +206,7 @@ namespace Rinjani.Hpx
                     Log.Debug($"Hpx GetOrderState response is null or failed ...");
                     return null;
                 }
+                Log.Debug("Hpx GetOrdersState End");
                 return response.Content;
             }
             catch (Exception ex)
@@ -212,6 +220,7 @@ namespace Rinjani.Hpx
         {
             try
             {
+                Log.Debug("Hpx Cancel Begin");
                 var path = "/api/v2/cancel?";
                 string body = "method=cancel&accesskey=" + _config.Key + $"&id={orderId}&currency=hsr_cnyt";
                 path += body;
@@ -223,6 +232,7 @@ namespace Rinjani.Hpx
                     Log.Debug($"Hpx Cancel response is null or failed ...");
                     Cancel(orderId);
                 }
+                Log.Debug("Hpx Cancel End");
             }
             catch (Exception ex)
             {
