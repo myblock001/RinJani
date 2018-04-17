@@ -576,6 +576,7 @@ namespace Rinjani
                     if (allBuyOrderHpx.Count >= 20)
                         break;
                     Log.Info($"正在复制买单，当前价格{bid.Price},当前数量{bid.Volume * config.VolumeRatio / 100}");
+                    bid.Broker = Broker.Hpx;
                     SendOrder(bid, bid.Volume*config.VolumeRatio/100, OrderType.Limit);                  
                     //SendOrder(bid, 0.02m, OrderType.Limit);
 
