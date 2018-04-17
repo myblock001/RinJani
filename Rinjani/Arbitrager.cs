@@ -595,6 +595,7 @@ namespace Rinjani
                     _activeOrders.Clear();
                     Sleep(config.SleepAfterSend);
                 }
+                PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
             }
             else
             {
@@ -616,6 +617,7 @@ namespace Rinjani
                             if (lastPendingSize == order.PendingSize)
                             {
                                 allBuyOrderHpx.Remove(order);
+                                PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                                 exe_flag = true;
                                 break;
                             }
@@ -635,6 +637,7 @@ namespace Rinjani
                             ZbSellOrderDeal();
                             ZbCheckOrderState();
                             allBuyOrderHpx.Remove(order);
+                            PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                             Sleep(config.SleepAfterSend);
                             GetOrdersState(1, 0, Broker.Hpx);
                             _activeOrders.Clear();
@@ -646,6 +649,7 @@ namespace Rinjani
                             Log.Info($"Hpx买单价格为{order.Price},不符合条件，删除");
                             _brokerAdapterRouter.Cancel(order);
                             allBuyOrderHpx.Remove(order);
+                            PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                             exe_flag = true;
                             Sleep(config.SleepAfterSend);
                             break;
@@ -670,6 +674,7 @@ namespace Rinjani
                         {
                             _brokerAdapterRouter.Cancel(worstBuyOrderHpx);
                             allBuyOrderHpx.Remove(worstBuyOrderHpx);
+                            PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                             worstBuyOrderHpx = allBuyOrderHpx[allBuyOrderHpx.Count - 1]; ;
                             Sleep(config.SleepAfterSend);
                         }
@@ -683,6 +688,7 @@ namespace Rinjani
                         {
                             _brokerAdapterRouter.Cancel(worstBuyOrderHpx);
                             allBuyOrderHpx.Remove(worstBuyOrderHpx);
+                            PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                             Sleep(config.SleepAfterSend);
                             worstBuyOrderHpx = allBuyOrderHpx[allBuyOrderHpx.Count - 1]; ;
                             _activeOrders.Clear();
@@ -702,6 +708,7 @@ namespace Rinjani
                         }
                         allBuyOrderHpx.Add(_activeOrders[_activeOrders.Count - 1]);
                         allBuyOrderHpx.Sort((x, y) => -(x.Price).CompareTo(y.Price));
+                        PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                         _activeOrders.Clear();
                         Sleep(config.SleepAfterSend);
                     }
@@ -740,6 +747,7 @@ namespace Rinjani
                     _activeOrders.Clear();
                     Sleep(config.SleepAfterSend);
                 }
+                PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
             }
             else
             {
@@ -761,6 +769,7 @@ namespace Rinjani
                             if (lastPendingSize == order.PendingSize)
                             {
                                 allSellOrderHpx.Remove(order);
+                                PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                                 exe_flag = true;
                                 break;
                             }
@@ -780,6 +789,7 @@ namespace Rinjani
                             ZbBuyOrderDeal();
                             ZbCheckOrderState();
                             allSellOrderHpx.Remove(order);
+                            PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                             Sleep(config.SleepAfterSend);
                             _activeOrders.Clear();
                             exe_flag = true;
@@ -793,6 +803,7 @@ namespace Rinjani
                             Log.Info($"Hpx卖单价格为{order.Price},不符合条件，删除");
                             _brokerAdapterRouter.Cancel(order);
                             allSellOrderHpx.Remove(order);
+                            PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                             exe_flag = true;
                             Sleep(config.SleepAfterSend);
                             break;
@@ -817,6 +828,7 @@ namespace Rinjani
                         {
                             _brokerAdapterRouter.Cancel(worstSellOrderHpx);
                             allBuyOrderHpx.Remove(worstSellOrderHpx);
+                            PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                             worstSellOrderHpx = allSellOrderHpx[allBuyOrderHpx.Count - 1]; ;
                             Sleep(config.SleepAfterSend);
                         }
@@ -829,6 +841,7 @@ namespace Rinjani
                         {
                             _brokerAdapterRouter.Cancel(worstSellOrderHpx);
                             allSellOrderHpx.Remove(worstSellOrderHpx);
+                            PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                             Sleep(config.SleepAfterSend);
                             worstSellOrderHpx = allSellOrderHpx[allSellOrderHpx.Count - 1];
                             _activeOrders.Clear();
@@ -848,11 +861,27 @@ namespace Rinjani
                         }
                         allSellOrderHpx.Add(_activeOrders[_activeOrders.Count - 1]);
                         allSellOrderHpx.Sort((x, y) => (x.Price).CompareTo(y.Price));
+                        PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                         _activeOrders.Clear();
                         Sleep(config.SleepAfterSend);
                     }
                 }
             }
         }
+
+        void PrintOrderInfo(List<Order> buyOrders, List<Order> sellOrders)
+        {
+            Log.Info("当前委托卖单:");
+            foreach (Order o in sellOrders.OrderByDescending(q=>q.Price))
+            {
+                Log.Info($"{o.Price}  {o.Size}");
+            }
+            Log.Info("当前委托买单:");
+            foreach (Order o in buyOrders)
+            {
+                Log.Info($"{o.Price}  {o.Size}");
+            }
+        }
+
     }
 }
