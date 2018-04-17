@@ -104,7 +104,7 @@ namespace Rinjani
             decimal invertedSpread = bestBidHpx.Price - price;
 
             decimal availableVolume = Util.RoundDown(Math.Min(bestAskZb.Volume, bestBidHpx.Volume), 3);
-            
+
             var balanceMap = _positionService.BalanceMap;
             decimal allowedSizeHpx = balanceMap[bestBidHpx.Broker].Hsr;
             decimal allowedSizeZb = balanceMap[bestAskZb.Broker].Cash / bestAskZb.Price;
@@ -137,7 +137,7 @@ namespace Rinjani
             {
                 return;
             }
-            decimal price = Math.Max(bestBidZb.Price, bestBidZb.BasePrice) - 0.01m; 
+            decimal price = Math.Max(bestBidZb.Price, bestBidZb.BasePrice) - 0.01m;
             SpreadAnalysisResult result = new SpreadAnalysisResult
             {
                 BestOrderZb = new Quote(Broker.Zb, QuoteSide.Ask, price, bestBidZb.BasePrice, _activeOrders[0].FilledSize),
@@ -193,9 +193,9 @@ namespace Rinjani
                 return;
             }
 
-            Log.Info(string.Format("套利方向 Broker1 {0}", bestOrderHpx.Side==QuoteSide.Ask?"卖单":"买单"));
+            Log.Info(string.Format("套利方向 Broker1 {0}", bestOrderHpx.Side == QuoteSide.Ask ? "卖单" : "买单"));
             Log.Info(string.Format("Broker1价格 {0},  Broker2基准价 {1}", bestOrderHpx.Price, result.BestOrderZb.BasePrice));
-            Log.Info(string.Format("套利点{0}%,差异点{1}%", config.ArbitragePoint, (100*invertedSpread/ result.BestOrderZb.BasePrice).ToString("0.00")));
+            Log.Info(string.Format("套利点{0}%,差异点{1}%", config.ArbitragePoint, (100 * invertedSpread / result.BestOrderZb.BasePrice).ToString("0.00")));
 
             Log.Info(Resources.SendingOrderTargettingQuote, bestOrderHpx);
             SendOrder(bestOrderHpx, targetVolume, OrderType.Limit);
@@ -240,7 +240,7 @@ namespace Rinjani
                     zbCashBalance = 0;
                 _activeOrders.Clear();
             }
-            while (_activeOrders.Count <= 1|| _activeOrders[_activeOrders.Count-1].BrokerOrderId==null)
+            while (_activeOrders.Count <= 1 || _activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
             {
                 Sleep(config.SleepAfterSend);
                 Log.Info("Zb Order failure,Re-order", bestOrderZb);
@@ -301,7 +301,7 @@ namespace Rinjani
         private decimal ZbAverageFilledPrice = 0;
         private void ZbCheckOrderState()
         {
-            if (_activeOrders.Count <2)
+            if (_activeOrders.Count < 2)
                 return;
             var config = _configStore.Config;
             foreach (var i in Enumerable.Range(1, config.MaxRetryCount))
@@ -324,8 +324,8 @@ namespace Rinjani
                 {
                     Log.Warn("Zb Leg is not filled yet,pending size is {0}", order.PendingSize);
                     ZbFilledSize = 0;
-                    for(int j=1;j< _activeOrders.Count;j++)
-                    { 
+                    for (int j = 1; j < _activeOrders.Count; j++)
+                    {
                         ZbFilledSize += _activeOrders[j].FilledSize;
                     }
                     if (ZbFilledSize > order.Size - config.MinSize)
@@ -407,7 +407,7 @@ namespace Rinjani
                         Log.Info(Resources.SellFillPriceIs, ZbAverageFilledPrice);
                         Log.Info(Resources.BuyFillPriceIs, ZbAverageFilledPrice);
                     }
-                    Log.Info(Resources.BothLegsAreSuccessfullyFilled);                   
+                    Log.Info(Resources.BothLegsAreSuccessfullyFilled);
                     Log.Info(Resources.ProfitIs, profit);
                     _activeOrders.Clear();
                     break;
@@ -526,7 +526,7 @@ namespace Rinjani
                 ordersState = ja.ToObject<List<OrderStateReply>>();
                 Log.Debug($"GetOrdersState Stop");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log.Debug($"GetOrdersState:{ex.Message}");
                 //Log.Info($"GetOrdersState:{ex.Message}");
@@ -537,7 +537,8 @@ namespace Rinjani
 
         public decimal zbCashBalance = 0;
         public decimal zbHsrBalance = 0;
-        private readonly List<Order> _pengdingOrdersHpx = new List<Order>();
+        private readonly List<Order> allBuyOrderHpx = new List<Order>();
+        private readonly List<Order> allSellOrderHpx = new List<Order>();
         private void LiquidBot()
         {
             if (ordersState != null)
@@ -567,17 +568,16 @@ namespace Rinjani
                 .OrderBy(q => q.Price);
             if (cpyAskZb.Count() == 0)
                 return;
-            var allBuyOrderHpx = _pengdingOrdersHpx.Where(q => q.Side == OrderSide.Buy)
-                .OrderByDescending(q => q.Price);
 
-            if(allBuyOrderHpx.Count()==0)
+            if (allBuyOrderHpx.Count == 0)
             {
-                foreach(var bid in cpyBidZb)
+                foreach (var bid in cpyBidZb)
                 {
-                    bid.Broker = Broker.Hpx;
+                    if (allBuyOrderHpx.Count >= 20)
+                        break;
                     Log.Info($"正在复制买单，当前价格{bid.Price},当前数量{bid.Volume * config.VolumeRatio / 100}");
-                    //SendOrder(bid, bid.Volume*config.VolumeRatio/100, OrderType.Limit);                  
-                    SendOrder(bid, 0.02m, OrderType.Limit);
+                    SendOrder(bid, bid.Volume*config.VolumeRatio/100, OrderType.Limit);                  
+                    //SendOrder(bid, 0.02m, OrderType.Limit);
 
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
                     {
@@ -593,11 +593,10 @@ namespace Rinjani
                         _activeOrders.Clear();
                         Log.Info("Hpx买单余额不足");
                         Sleep(config.SleepAfterSend);
-                        _positionService.GetBalances();
-                        Sleep(config.SleepAfterSend);
                         break;
                     }
-                    _pengdingOrdersHpx.Add(_activeOrders[_activeOrders.Count - 1]);
+                    allBuyOrderHpx.Add(_activeOrders[_activeOrders.Count - 1]);
+                    allBuyOrderHpx.Sort((x, y) => -(x.Price).CompareTo(y.Price));
                     _activeOrders.Clear();
                     Sleep(config.SleepAfterSend);
                 }
@@ -614,7 +613,10 @@ namespace Rinjani
                     {
                         var orderState = ordersState.Where(q => order.BrokerOrderId == q.id).FirstOrDefault();
                         if (orderState == null)
+                        {
+                            allBuyOrderHpx.Remove(order);
                             continue;
+                        }
                         decimal lastPendingSize = order.PendingSize;
                         orderState.SetOrder(order);
                         decimal curFilledSize = lastPendingSize - order.PendingSize;
@@ -635,6 +637,7 @@ namespace Rinjani
                             Log.Info($"Hpx订单部分成交，成交价格{new_order.Price},成交数量{new_order.FilledSize},Zb开始下单");
                             ZbSellOrderDeal();
                             ZbCheckOrderState();
+                            Sleep(config.SleepAfterSend);
                             GetOrdersState(1, 0, Broker.Hpx);
                             _activeOrders.Clear();
                             exe_flag = true;
@@ -645,9 +648,7 @@ namespace Rinjani
                         {
                             Log.Info($"Hpx买单价格为{order.Price},不符合条件，删除");
                             _brokerAdapterRouter.Cancel(order);
-                            _pengdingOrdersHpx.Remove(order);
-                            allBuyOrderHpx = _pengdingOrdersHpx.Where(q => q.Side == OrderSide.Buy)
-                             .OrderByDescending(q => q.Price);
+                            allBuyOrderHpx.Remove(order);
                             exe_flag = true;
                             Sleep(config.SleepAfterSend);
                             break;
@@ -655,54 +656,66 @@ namespace Rinjani
                         exe_flag = false;
                     }
                 }
-
                 Sleep(config.SleepAfterSend);
-                var bestBuyOrderHpx = _pengdingOrdersHpx.Where(q => q.Side == OrderSide.Buy)
-                    .OrderByDescending(q => q.Price).FirstOrDefault();
-                foreach (var bid in cpyBidZb)
+                var bestBuyOrderHpx = allBuyOrderHpx[0];
+                var worstBuyOrderHpx = allBuyOrderHpx[allBuyOrderHpx.Count - 1];
+                bool reloop = true;
+                while (reloop)
                 {
-                    if (bid.Price <= bestBuyOrderHpx.Price)
-                        continue;
-                    bid.Broker = Broker.Hpx;
-                    SendOrder(bid, bid.Volume*config.VolumeRatio/100, OrderType.Limit);
-                    Sleep(config.SleepAfterSend);
-                    Log.Info($"正在复制买单，当前价格{bid.Price},当前数量{bid.Volume * config.VolumeRatio / 100}");
-                    if (_activeOrders[_activeOrders.Count-1].BrokerOrderId == "0x3fffff")
+                    reloop = false;
+                    foreach (var bid in cpyBidZb)
                     {
-                        _activeOrders.Clear();
-                        Log.Info("Hpx买单余额不足");
-                        Sleep(config.SleepAfterSend);
-                        _positionService.GetBalances();
-                        Sleep(config.SleepAfterSend);
-                        break;
-                    }
-
-                    if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
-                    {
-                        _activeOrders.RemoveAt(_activeOrders.Count - 1);
-                        if (_activeOrders.Count == 0)
+                        if (bid.Price <= bestBuyOrderHpx.Price)
+                            continue;
+                        if (allBuyOrderHpx.Count >= 20)
                         {
+                            _brokerAdapterRouter.Cancel(worstBuyOrderHpx);
+                            allBuyOrderHpx.Remove(worstBuyOrderHpx);
+                            worstBuyOrderHpx = allBuyOrderHpx[allBuyOrderHpx.Count - 1]; ;
                             Sleep(config.SleepAfterSend);
+                        }
+                        bid.Broker = Broker.Hpx;
+                        SendOrder(bid, bid.Volume * config.VolumeRatio / 100, OrderType.Limit);
+                        Sleep(config.SleepAfterSend);
+                        Log.Info($"正在复制买单，当前价格{bid.Price},当前数量{bid.Volume * config.VolumeRatio / 100}");
+                        if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == "0x3fffff")
+                        {
+                            _brokerAdapterRouter.Cancel(worstBuyOrderHpx);
+                            allBuyOrderHpx.Remove(worstBuyOrderHpx);
+                            worstBuyOrderHpx = allBuyOrderHpx[allBuyOrderHpx.Count - 1]; ;
+                            _activeOrders.Clear();
+                            Log.Info("Hpx买单余额不足");
+                            reloop = true;
                             break;
                         }
+
+                        if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
+                        {
+                            _activeOrders.RemoveAt(_activeOrders.Count - 1);
+                            if (_activeOrders.Count == 0)
+                            {
+                                Sleep(config.SleepAfterSend);
+                                break;
+                            }
+                        }
+                        allBuyOrderHpx.Add(_activeOrders[_activeOrders.Count - 1]);
+                        allBuyOrderHpx.Sort((x, y) => -(x.Price).CompareTo(y.Price));
+                        _activeOrders.Clear();
+                        Sleep(config.SleepAfterSend);
                     }
-                    _pengdingOrdersHpx.Add(_activeOrders[_activeOrders.Count - 1]);
-                    _activeOrders.Clear();
-                    Sleep(config.SleepAfterSend);
                 }
             }
 
-            var allSellOrderHpx = _pengdingOrdersHpx.Where(q => q.Side == OrderSide.Sell)
-                .OrderBy(q => q.Price);
-
-            if (allSellOrderHpx.Count() == 0)
+            if (allSellOrderHpx.Count == 0)
             {
                 foreach (var ask in cpyAskZb)
                 {
+                    if (allSellOrderHpx.Count >= 20)
+                        break;
                     ask.Broker = Broker.Hpx;
                     Log.Info($"正在复制卖单，当前价格{ask.Price},当前数量{ask.Volume * config.VolumeRatio / 100}");
-                    //SendOrder(ask, ask.Volume * config.VolumeRatio / 100, OrderType.Limit);
-                    SendOrder(ask, 0.02m, OrderType.Limit);
+                    SendOrder(ask, ask.Volume * config.VolumeRatio / 100, OrderType.Limit);
+                    //SendOrder(ask, 0.02m, OrderType.Limit);
 
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
                     {
@@ -718,11 +731,10 @@ namespace Rinjani
                         _activeOrders.Clear();
                         Log.Info("Hpx卖单余额不足");
                         Sleep(config.SleepAfterSend);
-                        _positionService.GetBalances();
-                        Sleep(config.SleepAfterSend);
                         break;
                     }
-                    _pengdingOrdersHpx.Add(_activeOrders[_activeOrders.Count - 1]);
+                    allSellOrderHpx.Add(_activeOrders[_activeOrders.Count - 1]);
+                    allSellOrderHpx.Sort((x, y) => (x.Price).CompareTo(y.Price));
                     _activeOrders.Clear();
                     Sleep(config.SleepAfterSend);
                 }
@@ -739,7 +751,10 @@ namespace Rinjani
                     {
                         var orderState = ordersState.Where(q => order.BrokerOrderId == q.id).FirstOrDefault();
                         if (orderState == null)
+                        {
+                            allSellOrderHpx.Remove(order);
                             continue;
+                        }
                         decimal lastPendingSize = order.PendingSize;
                         orderState.SetOrder(order);
                         decimal curFilledSize = lastPendingSize - order.PendingSize;
@@ -772,9 +787,7 @@ namespace Rinjani
                         {
                             Log.Info($"Hpx卖单价格为{order.Price},不符合条件，删除");
                             _brokerAdapterRouter.Cancel(order);
-                            _pengdingOrdersHpx.Remove(order);
-                            allSellOrderHpx = _pengdingOrdersHpx.Where(q => q.Side == OrderSide.Sell)
-                             .OrderBy(q => q.Price);
+                            allSellOrderHpx.Remove(order);
                             exe_flag = true;
                             Sleep(config.SleepAfterSend);
                             break;
@@ -784,40 +797,54 @@ namespace Rinjani
                 }
 
                 Sleep(config.SleepAfterSend);
-                var bestShellOrderHpx = _pengdingOrdersHpx.Where(q => q.Side == OrderSide.Buy)
-                     .OrderByDescending(q => q.Price).FirstOrDefault();
-                foreach (var ask in cpyAskZb)
+                var bestSellOrderHpx = allSellOrderHpx[0];
+                var worstSellOrderHpx = allSellOrderHpx[allSellOrderHpx.Count - 1];
+                bool reloop = true;
+                while (reloop)
                 {
-                    if (ask.Price >= bestShellOrderHpx.Price)
-                        continue;
-                    ask.Broker = Broker.Hpx;
-                    SendOrder(ask, ask.Volume * config.VolumeRatio / 100, OrderType.Limit);
-                    Sleep(config.SleepAfterSend);
-                    Log.Info($"正在复制卖单，当前价格{ask.Price},当前数量{ask.Volume * config.VolumeRatio / 100}");
-                    if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == "0x3fffff")
+                    reloop = false;
+                    foreach (var ask in cpyAskZb)
                     {
-                        _activeOrders.Clear();
-                        Log.Info("Hpx卖单余额不足");
-                        Sleep(config.SleepAfterSend);
-                        _positionService.GetBalances();
-                        Sleep(config.SleepAfterSend);
-                        break;
-                    }
-
-                    if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
-                    {
-                        _activeOrders.RemoveAt(_activeOrders.Count - 1);
-                        if (_activeOrders.Count == 0)
+                        if (ask.Price >= bestSellOrderHpx.Price)
+                            continue;
+                        if (allSellOrderHpx.Count >= 20)
                         {
+                            _brokerAdapterRouter.Cancel(worstSellOrderHpx);
+                            allBuyOrderHpx.Remove(worstSellOrderHpx);
+                            worstSellOrderHpx = allSellOrderHpx[allBuyOrderHpx.Count - 1]; ;
                             Sleep(config.SleepAfterSend);
+                        }
+                        ask.Broker = Broker.Hpx;
+                        SendOrder(ask, ask.Volume * config.VolumeRatio / 100, OrderType.Limit);
+                        Sleep(config.SleepAfterSend);
+                        Log.Info($"正在复制卖单，当前价格{ask.Price},当前数量{ask.Volume * config.VolumeRatio / 100}");
+                        if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == "0x3fffff")
+                        {
+                            _brokerAdapterRouter.Cancel(worstSellOrderHpx);
+                            allSellOrderHpx.Remove(worstSellOrderHpx);
+                            worstSellOrderHpx = allSellOrderHpx[allSellOrderHpx.Count - 1]; ;
+                            _activeOrders.Clear();
+                            Log.Info("Hpx卖单余额不足");
+                            reloop = true;
                             break;
                         }
+
+                        if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
+                        {
+                            _activeOrders.RemoveAt(_activeOrders.Count - 1);
+                            if (_activeOrders.Count == 0)
+                            {
+                                Sleep(config.SleepAfterSend);
+                                break;
+                            }
+                        }
+                        allSellOrderHpx.Add(_activeOrders[_activeOrders.Count - 1]);
+                        allSellOrderHpx.Sort((x, y) => (x.Price).CompareTo(y.Price));
+                        _activeOrders.Clear();
+                        Sleep(config.SleepAfterSend);
                     }
-                    _pengdingOrdersHpx.Add(_activeOrders[_activeOrders.Count - 1]);
-                    _activeOrders.Clear();
-                    Sleep(config.SleepAfterSend);
                 }
             }
-        }    
+        }
     }
 }
