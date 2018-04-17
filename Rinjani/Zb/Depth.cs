@@ -10,6 +10,7 @@ namespace Rinjani.Zb
         public string quotesJson { get; set; }
         public IList<Quote> ToQuotes()
         {
+            var quotes = new List<Quote>();
             JObject j = JObject.Parse(quotesJson);
             JArray jasks = JArray.Parse(j["asks"].ToString());
             JArray jbids = JArray.Parse(j["bids"].ToString());
@@ -20,7 +21,6 @@ namespace Rinjani.Zb
             j = JObject.Parse(j["ticker"].ToString());
             decimal basePrice = decimal.Parse(j["last"].ToString());
 
-            var quotes = new List<Quote>();
             if (BuyPriceLevels != null)
             {
                 quotes.AddRange(BuyPriceLevels.Take(100).Select(x => new Quote

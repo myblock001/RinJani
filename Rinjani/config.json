@@ -5,6 +5,7 @@
   "LiquidBot": "true", //流动性机器人功能
   "VolumeRatio": "20", //下单量比例20%,LiquidBot为true时有效
   "RemovalRatio": "0.1", //去除比例，[-RemovalRatio,RemovalRatio]之间的订单不搬,LiquidBot为true时有效
+  "CopyQuantity": "5",
   "PriceMergeSize": "0.01",
   "MaxSize": "100",
   "MinSize": "0.01",

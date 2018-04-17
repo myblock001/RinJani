@@ -9,6 +9,7 @@ namespace Rinjani
         public bool LiquidBot { get; set; }//流动性机器人功能
         public decimal VolumeRatio { get; set; } //下单量比例20%,LiquidBot为true时有效
         public decimal RemovalRatio { get; set; } //去除比例，[-RemovalRatio,RemovalRatio]之间的订单不搬,LiquidBot为true时有效
+        public int CopyQuantity { get; set; }
         public decimal PriceMergeSize { get; set; } = 10;
         public decimal MaxSize { get; set; }
         public decimal MinSize { get; set; }
