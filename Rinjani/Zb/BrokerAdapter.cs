@@ -111,8 +111,8 @@ namespace Rinjani.Zb
                 }
                 BrokerBalance bb = new BrokerBalance();
                 bb.Broker = Broker;
-                bb.Hsr = decimal.Parse(jhsr["available"].ToString());
-                bb.Cash = decimal.Parse(jqc["available"].ToString());
+                bb.Leg1 = decimal.Parse(jhsr["available"].ToString());
+                bb.Leg2 = decimal.Parse(jqc["available"].ToString());
                 Log.Debug($"Zb GetBalance End ...");
                 return bb;
             }

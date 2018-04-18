@@ -63,8 +63,8 @@ namespace Rinjani
             decimal invertedSpread = price - bestAskHpx.Price;
             decimal availableVolume = Util.RoundDown(Math.Min(bestBidZb.Volume, bestAskHpx.Volume), 3);
             var balanceMap = _positionService.BalanceMap;
-            decimal allowedSizeHpx = balanceMap[bestAskHpx.Broker].Cash / bestAskHpx.Price;
-            decimal allowedSizeZb = balanceMap[bestBidZb.Broker].Hsr;
+            decimal allowedSizeHpx = balanceMap[bestAskHpx.Broker].Leg2 / bestAskHpx.Price;
+            decimal allowedSizeZb = balanceMap[bestBidZb.Broker].Leg1;
             decimal targetVolume = new[] { availableVolume, config.MaxSize, allowedSizeHpx, allowedSizeZb }.Min();
             if (targetVolume < config.MinSize)
                 return;
@@ -106,8 +106,8 @@ namespace Rinjani
             decimal availableVolume = Util.RoundDown(Math.Min(bestAskZb.Volume, bestBidHpx.Volume), 3);
 
             var balanceMap = _positionService.BalanceMap;
-            decimal allowedSizeHpx = balanceMap[bestBidHpx.Broker].Hsr;
-            decimal allowedSizeZb = balanceMap[bestAskZb.Broker].Cash / bestAskZb.Price;
+            decimal allowedSizeHpx = balanceMap[bestBidHpx.Broker].Leg1;
+            decimal allowedSizeZb = balanceMap[bestAskZb.Broker].Leg2 / bestAskZb.Price;
             decimal targetVolume = new[] { availableVolume, config.MaxSize, allowedSizeHpx, allowedSizeZb }.Min();
             targetVolume = Util.RoundDown(targetVolume, 2);
             if (targetVolume < config.MinSize)

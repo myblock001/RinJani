@@ -94,8 +94,8 @@ namespace Rinjani.Hpx
                 j = JObject.Parse(j["balance"].ToString());
                 BrokerBalance bb = new BrokerBalance();
                 bb.Broker = Broker;
-                bb.Hsr = decimal.Parse(j["HSR"].ToString());
-                bb.Cash = decimal.Parse(j["CNYT"].ToString());
+                bb.Leg1 = decimal.Parse(j["HSR"].ToString());
+                bb.Leg2 = decimal.Parse(j["CNYT"].ToString());
                 Log.Debug("Hpx GetBalance End");
                 return bb;
             }
