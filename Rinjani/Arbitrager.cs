@@ -17,6 +17,8 @@ namespace Rinjani
         private readonly IConfigStore _configStore;
         private readonly IBalanceService _positionService;
         private readonly IQuoteAggregator _quoteAggregator;
+        private readonly BrokerConfig _configHpx;
+        private readonly BrokerConfig _configZb;
 
         public Arbitrager(IQuoteAggregator quoteAggregator,
             IConfigStore configStore,
@@ -27,6 +29,8 @@ namespace Rinjani
             _configStore = configStore ?? throw new ArgumentNullException(nameof(configStore));
             _brokerAdapterRouter = brokerAdapterRouter ?? throw new ArgumentNullException(nameof(brokerAdapterRouter));
             _positionService = positionService ?? throw new ArgumentNullException(nameof(positionService));
+            _configHpx = configStore.Config.Brokers.First(b => b.Broker == Broker.Hpx);
+            _configZb = configStore.Config.Brokers.First(b => b.Broker == Broker.Zb);
         }
 
         public void Start()
@@ -59,8 +63,8 @@ namespace Rinjani
             {
                 return;
             }
-            decimal price = Math.Max(bestBidZb.Price, bestBidZb.BasePrice) - 0.01m;
-            decimal invertedSpread = price - bestAskHpx.Price;
+            decimal price = Math.Max(bestBidZb.Price, bestBidZb.BasePrice)*_configZb.Leg2ExRate - 0.01m;
+            decimal invertedSpread = price - bestAskHpx.Price * _configHpx.Leg2ExRate;
             decimal availableVolume = Util.RoundDown(Math.Min(bestBidZb.Volume, bestAskHpx.Volume), 3);
             var balanceMap = _positionService.BalanceMap;
             decimal allowedSizeHpx = balanceMap[bestAskHpx.Broker].Leg2 / bestAskHpx.Price;
@@ -100,8 +104,8 @@ namespace Rinjani
             {
                 return;
             }
-            decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice) + 0.01m;
-            decimal invertedSpread = bestBidHpx.Price - price;
+            decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice)*_configZb.Leg2ExRate + 0.01m;
+            decimal invertedSpread = bestBidHpx.Price * _configHpx.Leg2ExRate - price;
 
             decimal availableVolume = Util.RoundDown(Math.Min(bestAskZb.Volume, bestBidHpx.Volume), 3);
 
@@ -326,7 +330,7 @@ namespace Rinjani
                     {
                         ZbFilledSize += _activeOrders[j].FilledSize;
                     }
-                    if (ZbFilledSize >= _activeOrders[0].FilledSize - config.MinSize)
+                    if (ZbFilledSize>0 && ZbFilledSize >= _activeOrders[0].FilledSize-0.001m)
                     {
                         _brokerAdapterRouter.Cancel(order);
                         order.Status = OrderStatus.Filled;
@@ -588,13 +592,15 @@ namespace Rinjani
             decimal lowestAskPrice = bestAskZb.Price * (100 + config.RemovalRatio) / 100;
 
             var cpyBidZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Bid)
-                .Where(q => q.Broker == Broker.Zb).Where(q => q.Price < highestBidPrice)
+                .Where(q => q.Broker == Broker.Zb).Where(q => q.Price <= highestBidPrice)
                 .OrderByDescending(q => q.Price);
+            highestBidPrice = cpyBidZb.FirstOrDefault().Price;
             if (cpyBidZb.Count() == 0)
                 return;
             var cpyAskZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Ask)
-                .Where(q => q.Broker == Broker.Zb).Where(q => q.Price > lowestAskPrice)
+                .Where(q => q.Broker == Broker.Zb).Where(q => q.Price >= lowestAskPrice)
                 .OrderBy(q => q.Price);
+            lowestAskPrice = cpyAskZb.FirstOrDefault().Price;
             if (cpyAskZb.Count() == 0)
                 return;
 
@@ -608,8 +614,9 @@ namespace Rinjani
                     cpyVol = cpyVol > config.MinSize ? cpyVol : config.MinSize;
                     Log.Info($"正在复制买单，当前价格{bid.Price},当前数量{cpyVol}");
                     bid.Broker = Broker.Hpx;
-                    //SendOrder(bid, cpyVol, OrderType.Limit);
-                    SendOrder(bid, 0.02m, OrderType.Limit);
+                    bid.Price = bid.Price * _configZb.Leg2ExRate / _configHpx.Leg2ExRate;
+                    SendOrder(bid, cpyVol, OrderType.Limit);
+                    //SendOrder(bid, 0.02m, OrderType.Limit);
 
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
                     {
@@ -717,12 +724,20 @@ namespace Rinjani
                 {
                     if (bid.Price <= worstBuyOrderHpx.Price && allBuyOrderHpx.Count >= config.CopyQuantity)
                         continue;
+
+                    var tmp_o = allBuyOrderHpx.Where(q=>q.Price == bid.Price).FirstOrDefault();
+                    if (tmp_o != null)
+                    {
+                        continue;
+                    }
+
                     decimal cpyVol = bid.Volume * config.VolumeRatio / 100;
                     cpyVol = cpyVol > config.MinSize ? cpyVol : config.MinSize;
                     Log.Info($"正在复制买单，当前价格{bid.Price},当前数量{cpyVol}");
                     bid.Broker = Broker.Hpx;
-                    //SendOrder(bid, cpyVol, OrderType.Limit);
-                    SendOrder(bid, 0.02m, OrderType.Limit);
+                    bid.Price = bid.Price * _configZb.Leg2ExRate / _configHpx.Leg2ExRate;
+                    SendOrder(bid, cpyVol, OrderType.Limit);
+                    //SendOrder(bid, 0.02m, OrderType.Limit);
                     Sleep(config.SleepAfterSend);
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == "0x3fffff")
                     {
@@ -770,8 +785,9 @@ namespace Rinjani
                     cpyVol = cpyVol > config.MinSize ? cpyVol : config.MinSize;
                     Log.Info($"正在复制卖单，当前价格{ask.Price},当前数量{cpyVol}");
                     ask.Broker = Broker.Hpx;
-                    //SendOrder(ask, cpyVol, OrderType.Limit);
-                    SendOrder(ask, 0.02m, OrderType.Limit);
+                    ask.Price = ask.Price * _configZb.Leg2ExRate / _configHpx.Leg2ExRate;
+                    SendOrder(ask, cpyVol, OrderType.Limit);
+                    //SendOrder(ask, 0.02m, OrderType.Limit);
 
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
                     {
@@ -882,13 +898,19 @@ namespace Rinjani
                 {
                     if (ask.Price >= worstSellOrderHpx.Price && allSellOrderHpx.Count >= config.CopyQuantity)
                         continue;
+                    var tmp_o = allSellOrderHpx.Where(q => q.Price == ask.Price).FirstOrDefault();
+                    if (tmp_o != null)
+                    {
+                        continue;
+                    }
 
                     decimal cpyVol = ask.Volume * config.VolumeRatio / 100;
                     cpyVol = cpyVol > config.MinSize ? cpyVol : config.MinSize;
                     Log.Info($"正在复制卖单，当前价格{ask.Price},当前数量{cpyVol}");
                     ask.Broker = Broker.Hpx;
-                    //SendOrder(ask, cpyVol, OrderType.Limit);
-                    SendOrder(ask, 0.02m, OrderType.Limit);
+                    ask.Price = ask.Price * _configZb.Leg2ExRate / _configHpx.Leg2ExRate;
+                    SendOrder(ask, cpyVol, OrderType.Limit);
+                    //SendOrder(ask, 0.02m, OrderType.Limit);
                     Sleep(config.SleepAfterSend);
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == "0x3fffff")
                     {
