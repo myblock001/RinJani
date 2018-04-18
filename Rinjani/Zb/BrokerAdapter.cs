@@ -94,25 +94,25 @@ namespace Rinjani.Zb
                 JObject j = JObject.Parse(response.Content);
                 j = JObject.Parse(j["result"].ToString());
                 JArray jar = JArray.Parse(j["coins"].ToString());
-                JObject jhsr = null;
-                JObject jqc = null;
+                JObject jleg1 = null;
+                JObject jleg2 = null;
                 foreach (JObject jj in jar)
                 {
-                    if (jj["enName"].ToString().ToUpper() == "HSR")
+                    if (jj["enName"].ToString().ToUpper() == _config.Leg1.ToUpper())
                     {
-                        jhsr = jj;
+                        jleg1 = jj;
                     }
-                    if (jj["enName"].ToString().ToUpper() == "QC")
+                    if (jj["enName"].ToString().ToUpper() == _config.Leg2.ToUpper())
                     {
-                        jqc = jj;
+                        jleg2 = jj;
                     }
-                    if (jhsr != null && jqc != null)
+                    if (jleg1 != null && jleg2 != null)
                         break;
                 }
                 BrokerBalance bb = new BrokerBalance();
                 bb.Broker = Broker;
-                bb.Leg1 = decimal.Parse(jhsr["available"].ToString());
-                bb.Leg2 = decimal.Parse(jqc["available"].ToString());
+                bb.Leg1 = decimal.Parse(jleg1["available"].ToString());
+                bb.Leg2 = decimal.Parse(jleg2["available"].ToString());
                 Log.Debug($"Zb GetBalance End ...");
                 return bb;
             }
@@ -126,7 +126,7 @@ namespace Rinjani.Zb
         public string FetchTicker()
         {
             Log.Debug($"Getting ticker from {_config.Broker}...");
-            var path = "data/v1/ticker?market=hsr_qc";
+            var path = $"data/v1/ticker?market={_config.Leg1.ToLower()}_{_config.Leg2.ToLower()}";
             var req = RestUtil.CreateJsonRestRequest(path);
             SetBaseUrl("quote");
             var response = _restClient.Execute(req);
@@ -138,7 +138,7 @@ namespace Rinjani.Zb
             try
             {
                 Log.Debug($"Getting depth from {_config.Broker}...");
-                var path = "data/v1/depth?market=hsr_qc&size=50";
+                var path = $"data/v1/depth?market={_config.Leg1.ToLower()}_{_config.Leg2.ToLower()}&size=50";
                 var req = RestUtil.CreateJsonRestRequest(path);
                 SetBaseUrl("quote");
                 var response = _restClient.Execute(req);
@@ -163,7 +163,7 @@ namespace Rinjani.Zb
         {
             var path = "/api/order?";
             int tradetype = param.side == "buy" ? 1 : 0;
-            string body = "accesskey=" + _config.Key + $"&amount={param.quantity}&currency=hsr_qc&method=order&price={param.price}&tradeType={tradetype}";
+            string body = "accesskey=" + _config.Key + $"&amount={param.quantity}&currency={_config.Leg1.ToLower()}_{_config.Leg2.ToLower()}&method=order&price={param.price}&tradeType={tradetype}";
             path += body;
             var req = BuildRequest(path, "GET", body);
             RestUtil.LogRestRequest(req);
@@ -182,7 +182,7 @@ namespace Rinjani.Zb
         private OrderStateReply GetOrderState(string id)
         {
             var path = "/api/getOrder?";
-            string body = "accesskey=" + _config.Key + $"&currency=hsr_qc&id={id}&method=getOrder";
+            string body = "accesskey=" + _config.Key + $"&currency={_config.Leg1.ToLower()}_{_config.Leg2.ToLower()}&id={id}&method=getOrder";
             path += body;
             var req = BuildRequest(path, "GET", body);
             RestUtil.LogRestRequest(req);
@@ -206,7 +206,7 @@ namespace Rinjani.Zb
         public string GetOrdersState(int pageIndex, int tradeType)
         {
             var path = "/api/getOrders?";
-            string body = "accesskey=" + _config.Key + $"&currency=hsr_qc&method=getOrders&pageIndex={pageIndex}&tradeType={tradeType}";
+            string body = "accesskey=" + _config.Key + $"&currency={_config.Leg1.ToLower()}_{_config.Leg2.ToLower()}&method=getOrders&pageIndex={pageIndex}&tradeType={tradeType}";
             path += body;
             var req = BuildRequest(path, "GET", body);
             RestUtil.LogRestRequest(req);
@@ -223,7 +223,7 @@ namespace Rinjani.Zb
         private void Cancel(string orderId)
         {
             var path = "/api/cancelOrder?";
-            string body = "accesskey=" + _config.Key + $"&currency=hsr_qc&id={orderId}&method=cancelOrder";
+            string body = "accesskey=" + _config.Key + $"&currency={_config.Leg1.ToLower()}_{_config.Leg2.ToLower()}&id={orderId}&method=cancelOrder";
             path += body;
             var req = BuildRequest(path, "GET", body);
             SetBaseUrl("trade");

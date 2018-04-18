@@ -604,9 +604,11 @@ namespace Rinjani
                 {
                     if (allBuyOrderHpx.Count >= config.CopyQuantity)
                         break;
-                    Log.Info($"正在复制买单，当前价格{bid.Price},当前数量{bid.Volume * config.VolumeRatio / 100}");
+                    decimal cpyVol = bid.Volume * config.VolumeRatio / 100;
+                    cpyVol = cpyVol > config.MinSize ? cpyVol : config.MinSize;
+                    Log.Info($"正在复制买单，当前价格{bid.Price},当前数量{cpyVol}");
                     bid.Broker = Broker.Hpx;
-                    //SendOrder(bid, bid.Volume * config.VolumeRatio / 100, OrderType.Limit);
+                    //SendOrder(bid, cpyVol, OrderType.Limit);
                     SendOrder(bid, 0.02m, OrderType.Limit);
 
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
@@ -683,6 +685,14 @@ namespace Rinjani
                             exe_flag = true;
                             break;
                         }
+                    }
+                }
+                exe_flag = true;
+                while (exe_flag)
+                {
+                    exe_flag = false;
+                    foreach (var order in allBuyOrderHpx)
+                    {
                         if (order.Price > highestBidPrice)
                         {
                             Log.Info($"Hpx买单价格为{order.Price},不符合条件，删除");
@@ -707,9 +717,11 @@ namespace Rinjani
                 {
                     if (bid.Price <= worstBuyOrderHpx.Price && allBuyOrderHpx.Count >= config.CopyQuantity)
                         continue;
-                    Log.Info($"正在复制买单，当前价格{bid.Price},当前数量{bid.Volume * config.VolumeRatio / 100}");
+                    decimal cpyVol = bid.Volume * config.VolumeRatio / 100;
+                    cpyVol = cpyVol > config.MinSize ? cpyVol : config.MinSize;
+                    Log.Info($"正在复制买单，当前价格{bid.Price},当前数量{cpyVol}");
                     bid.Broker = Broker.Hpx;
-                    //SendOrder(bid, bid.Volume * config.VolumeRatio / 100, OrderType.Limit);
+                    //SendOrder(bid, cpyVol, OrderType.Limit);
                     SendOrder(bid, 0.02m, OrderType.Limit);
                     Sleep(config.SleepAfterSend);
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == "0x3fffff")
@@ -719,8 +731,7 @@ namespace Rinjani
                         allBuyOrderHpx.Remove(worstBuyOrderHpx);
                         PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                         _activeOrders.Clear();
-                        if (allBuyOrderHpx.Count == 0)
-                            return;
+                        break;
                     }
 
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
@@ -755,9 +766,11 @@ namespace Rinjani
                 {
                     if (allSellOrderHpx.Count >= config.CopyQuantity)
                         break;
-                    Log.Info($"正在复制卖单，当前价格{ask.Price},当前数量{ask.Volume * config.VolumeRatio / 100}");
+                    decimal cpyVol = ask.Volume * config.VolumeRatio / 100;
+                    cpyVol = cpyVol > config.MinSize ? cpyVol : config.MinSize;
+                    Log.Info($"正在复制卖单，当前价格{ask.Price},当前数量{cpyVol}");
                     ask.Broker = Broker.Hpx;
-                    //SendOrder(ask, ask.Volume * config.VolumeRatio / 100, OrderType.Limit);
+                    //SendOrder(ask, cpyVol, OrderType.Limit);
                     SendOrder(ask, 0.02m, OrderType.Limit);
 
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
@@ -789,6 +802,7 @@ namespace Rinjani
                 GetOrdersState(1, 1, Broker.Hpx);
                 if (ordersState == null)
                     return;
+
                 while (exe_flag)
                 {
                     exe_flag = false;
@@ -836,6 +850,14 @@ namespace Rinjani
                                 return;
                             break;
                         }
+                    }
+                }
+                exe_flag = true;
+                while (exe_flag)
+                {
+                    exe_flag = false;
+                    foreach (var order in allSellOrderHpx)
+                    {
                         if (order.Price < lowestAskPrice)
                         {
                             Log.Info($"Hpx卖单价格为{order.Price},不符合条件，删除");
@@ -860,9 +882,12 @@ namespace Rinjani
                 {
                     if (ask.Price >= worstSellOrderHpx.Price && allSellOrderHpx.Count >= config.CopyQuantity)
                         continue;
-                    Log.Info($"正在复制卖单，当前价格{ask.Price},当前数量{ask.Volume * config.VolumeRatio / 100}");
+
+                    decimal cpyVol = ask.Volume * config.VolumeRatio / 100;
+                    cpyVol = cpyVol > config.MinSize ? cpyVol : config.MinSize;
+                    Log.Info($"正在复制卖单，当前价格{ask.Price},当前数量{cpyVol}");
                     ask.Broker = Broker.Hpx;
-                    //SendOrder(ask, ask.Volume * config.VolumeRatio / 100, OrderType.Limit);
+                    //SendOrder(ask, cpyVol, OrderType.Limit);
                     SendOrder(ask, 0.02m, OrderType.Limit);
                     Sleep(config.SleepAfterSend);
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == "0x3fffff")
@@ -872,8 +897,7 @@ namespace Rinjani
                         allSellOrderHpx.Remove(worstSellOrderHpx);
                         PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                         _activeOrders.Clear();
-                        if (allSellOrderHpx.Count == 0)
-                            return;
+                        break;
                     }
 
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
@@ -908,11 +932,11 @@ namespace Rinjani
             var cpyBidZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Bid)
                  .Where(q => q.Broker == Broker.Zb).OrderByDescending(q => q.Price);
             var cpyAskZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Ask)
-                .Where(q => q.Broker == Broker.Zb).OrderBy(q => q.Price);
+                .Where(q => q.Broker == Broker.Zb).OrderByDescending(q => q.Price);
 
             Log.Info("Zb当前委托卖/买单:");
             int count = 0;
-            foreach (Quote o in cpyBidZb.OrderByDescending(q => q.Price))
+            foreach (Quote o in cpyAskZb)
             {
                 Log.Info($"{o.Price}  {o.Volume}");
                 if (count++ > _configStore.Config.CopyQuantity)
@@ -925,7 +949,7 @@ namespace Rinjani
             if (_quoteAggregator.Quotes.Count > 0)
                 basePrice = _quoteAggregator.Quotes[0].BasePrice;
             Log.Info($"-----基准价 {basePrice}----");
-            foreach (Quote o in cpyBidZb.OrderByDescending(q => q.Price))
+            foreach (Quote o in cpyBidZb)
             {
                 Log.Info($"{o.Price}  {o.Volume}");
                 if (++count >= _configStore.Config.CopyQuantity)

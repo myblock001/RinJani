@@ -94,8 +94,8 @@ namespace Rinjani.Hpx
                 j = JObject.Parse(j["balance"].ToString());
                 BrokerBalance bb = new BrokerBalance();
                 bb.Broker = Broker;
-                bb.Leg1 = decimal.Parse(j["HSR"].ToString());
-                bb.Leg2 = decimal.Parse(j["CNYT"].ToString());
+                bb.Leg1 = decimal.Parse(j[_config.Leg1.ToUpper()].ToString());
+                bb.Leg2 = decimal.Parse(j[_config.Leg2.ToUpper()].ToString());
                 Log.Debug("Hpx GetBalance End");
                 return bb;
             }
@@ -111,8 +111,8 @@ namespace Rinjani.Hpx
             try
             {
                 Log.Debug("Hpx FetchQuotes Begin");
-                string url = "https://www.hpx.com/real/market/hsr_cnyt.html";
-                string param = "event=addChannel&channel=real_depth&exchangeTypeCode=hsr_cnyt&buysellcount=50&successcount=50&mergeType=1e-8&token=";
+                string url = $"https://www.hpx.com/real/market/{_config.Leg1.ToLower()}_{_config.Leg2.ToLower()}.html";
+                string param = $"event=addChannel&channel=real_depth&exchangeTypeCode={_config.Leg1.ToLower()}_{_config.Leg2.ToLower()}&buysellcount=50&successcount=50&mergeType=1e-8&token=";
                 string content = HttpPost(url, param);
                 Log.Debug($"Received depth from {_config.Broker}.");
                 Depth depth = new Depth() { quotesJson = content };
@@ -134,7 +134,7 @@ namespace Rinjani.Hpx
                 Log.Debug("Hpx Send Begin");
                 var path = "/api/v2/order?";
                 int tradetype = param.side == "buy" ? 0 : 1;
-                string body = "method=order&accesskey=" + _config.Key + $"&amount={param.quantity}&currency=hsr_cnyt&price={param.price}&tradeType={tradetype}";
+                string body = $"method=order&accesskey=" + _config.Key + $"&amount={param.quantity}&currency={_config.Leg1.ToLower()}_{_config.Leg2.ToLower()}&price={param.price}&tradeType={tradetype}";
                 path += body;
                 var req = BuildRequest(path, "GET", body);
                 RestUtil.LogRestRequest(req);
@@ -162,7 +162,7 @@ namespace Rinjani.Hpx
             {
                 Log.Debug("Hpx GetOrderState Begin");
                 var path = "/api/v2/getOrder?";
-                string body = "method=getOrder&accesskey=" + _config.Key + $"&id={id}&currency=hsr_cnyt";
+                string body = "method=getOrder&accesskey=" + _config.Key + $"&id={id}&currency={_config.Leg1.ToLower()}_{_config.Leg2.ToLower()}";
                 path += body;
                 var req = BuildRequest(path, "GET", body);
                 RestUtil.LogRestRequest(req);
@@ -196,7 +196,7 @@ namespace Rinjani.Hpx
             {
                 Log.Debug("Hpx GetOrdersState Begin");
                 var path = "/api/v2/getOrders?";
-                string body = "method=getOrders&accesskey=" + _config.Key + $"&tradeType={tradeType}&currency=hsr_cnyt&pageIndex=1&pageSize=100";
+                string body = "method=getOrders&accesskey=" + _config.Key + $"&tradeType={tradeType}&currency={_config.Leg1.ToLower()}_{_config.Leg2.ToLower()}&pageIndex=1&pageSize=100";
                 path += body;
                 var req = BuildRequest(path, "GET", body);
                 RestUtil.LogRestRequest(req);
@@ -222,7 +222,7 @@ namespace Rinjani.Hpx
             {
                 Log.Debug("Hpx Cancel Begin");
                 var path = "/api/v2/cancel?";
-                string body = "method=cancel&accesskey=" + _config.Key + $"&id={orderId}&currency=hsr_cnyt";
+                string body = "method=cancel&accesskey=" + _config.Key + $"&id={orderId}&currency={_config.Leg1.ToLower()}_{_config.Leg2.ToLower()}";
                 path += body;
                 var req = BuildRequest(path, "GET", body);
                 RestUtil.LogRestRequest(req);

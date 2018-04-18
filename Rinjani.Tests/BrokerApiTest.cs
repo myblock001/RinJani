@@ -95,8 +95,8 @@ namespace Rinjani.Tests
             var configStore = new JsonConfigStore(ConfigPath, new List<IConfigValidator>());
             var brokerConfig = configStore.Config.Brokers.First(x => x.Broker == broker);
             var ba = new Zb.BrokerAdapter(new RestClient(), configStore);
-            var hsrPosition = ba.FetchQuotes();
-            Debug.WriteLine($"{broker} {hsrPosition}");
+            var leg1Position = ba.FetchQuotes();
+            Debug.WriteLine($"{broker} {leg1Position}");
         }
 
         [TestMethod]
@@ -107,8 +107,8 @@ namespace Rinjani.Tests
             var configStore = new JsonConfigStore(ConfigPath, new List<IConfigValidator>());
             var brokerConfig = configStore.Config.Brokers.First(x => x.Broker == broker);
             var ba = new Zb.BrokerAdapter(new RestClient(), configStore);
-            var hsrPosition = ba.GetBalance();
-            Debug.WriteLine($"{broker} {hsrPosition}");
+            var leg1Position = ba.GetBalance();
+            Debug.WriteLine($"{broker} {leg1Position}");
         }
 
 
@@ -132,7 +132,7 @@ namespace Rinjani.Tests
             var configStore = new JsonConfigStore(ConfigPath, new List<IConfigValidator>());
             var brokerConfig = configStore.Config.Brokers.First(x => x.Broker == broker);
             var ba = new Hpx.BrokerAdapter(new RestClient(), configStore);
-            var hsrPosition = ba.GetBalance();
+            var leg1Position = ba.GetBalance();
         }
     }
 }

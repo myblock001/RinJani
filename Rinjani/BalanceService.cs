@@ -52,13 +52,6 @@ namespace Rinjani
                 foreach (var brokerConfig in config.Brokers.Where(b => b.Enabled))
                 {
                     BrokerBalance currentBalance = GetBalance(brokerConfig.Broker);
-                    //if (!BalanceMap(brokerConfig.Broker)&&BalanceMap[brokerConfig.Broker] == null)
-                    //    BalanceMap.Add(brokerConfig.Broker, currentBalance);
-                    //else
-                    //{
-                    //    BalanceMap[brokerConfig.Broker].Hsr = currentBalance.Hsr;
-                    //    BalanceMap[brokerConfig.Broker].Cash = currentBalance.Cash;
-                    //}
                     BalanceMap.Add(brokerConfig.Broker, currentBalance);
                 } 
 
