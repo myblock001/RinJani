@@ -445,19 +445,7 @@ namespace Rinjani
             {
                 Log.Error(ex.Message);
                 Log.Debug(ex);
-                GetOrdersState(1, 0, Broker.Hpx);
-                Sleep(_configStore.Config.SleepAfterSend);
-                foreach (var s in ordersState)
-                {
-                    Order o = new Order();
-                    o.BrokerOrderId = s.id;
-                    o.Broker = Broker.Hpx;
-                    s.SetOrder(o);
-                    Log.Info($"删除订单{o.BrokerOrderId}  {o.Price}  {o.Size}...");
-                    _brokerAdapterRouter.Cancel(o);
-                    Sleep(_configStore.Config.SleepAfterSend);
-                }
-
+                EmailHelper.SendMailUse(_configStore.Config.EmailAddress,"Rinjnai程序退出", Resources.ArbitragerThreadHasBeenStopped+ex.Message);
                 if (Environment.UserInteractive)
                 {
                     Log.Error(Resources.ArbitragerThreadHasBeenStopped);
@@ -531,15 +519,32 @@ namespace Rinjani
                         s.SetOrder(o);
                         Log.Info($"删除订单{o.BrokerOrderId}  {o.Price}  {o.Size}...");
                         _brokerAdapterRouter.Cancel(o);
-                        Sleep(_configStore.Config.SleepAfterSend);
+                        Sleep(1000);
                     }
                     Environment.Exit(-1);
                 }
 
                 LiquidBot();
             }
+            MonitorBalance();
+        }
 
-            //_positionService.GetBalances();
+        public void MonitorBalance()
+        {
+            _positionService.GetBalances();
+            var config = _configStore.Config;
+            if (_positionService.BalanceMap[Broker.Hpx] == null || _positionService.BalanceMap[Broker.Zb] == null)
+                return;
+            if (_positionService.BalanceMap[Broker.Hpx].Leg1 < _configHpx.Leg1ThresholdSendEmail|| _positionService.BalanceMap[Broker.Hpx].Leg2 < _configHpx.Leg2ThresholdSendEmail)
+            {
+                string content = $"Hpx Leg1 {_positionService.BalanceMap[Broker.Hpx].Leg1},Leg2 {_positionService.BalanceMap[Broker.Hpx].Leg2}";
+                EmailHelper.SendMailUse(_configStore.Config.EmailAddress, "Hpx 余额不足", content);
+            }
+            if (_positionService.BalanceMap[Broker.Zb].Leg1 < _configZb.Leg1ThresholdSendEmail || _positionService.BalanceMap[Broker.Zb].Leg2 < _configZb.Leg2ThresholdSendEmail)
+            {
+                string content = $"Zb Leg1 {_positionService.BalanceMap[Broker.Zb].Leg1},Leg2 {_positionService.BalanceMap[Broker.Zb].Leg2}";
+                EmailHelper.SendMailUse(_configStore.Config.EmailAddress, "Zb 余额不足", content);
+            }
         }
 
         public List<OrderStateReply> ordersState;
@@ -569,11 +574,41 @@ namespace Rinjani
             }
         }
 
-
-        private readonly List<Order> allBuyOrderHpx = new List<Order>();
-        private readonly List<Order> allSellOrderHpx = new List<Order>();
+        public void InitHpxOrder()
+        {
+            if (startflag)
+            {
+                startflag = false;
+                allBuyOrderHpx.Clear();
+                allSellOrderHpx.Clear();
+                GetOrdersState(1, 0, Broker.Hpx);
+                if (ordersState == null)
+                    return;
+                foreach (OrderStateReply o in ordersState)
+                {
+                    if (o.type == 0)//buy
+                    {
+                        Order new_order = new Order(Broker.Hpx, OrderSide.Buy, o.total_amount, o.price, OrderType.Limit);
+                        o.SetOrder(new_order);
+                        allBuyOrderHpx.Add(new_order);
+                    }
+                    else//sell
+                    {
+                        Order new_order = new Order(Broker.Hpx, OrderSide.Sell, o.total_amount, o.price, OrderType.Limit);
+                        o.SetOrder(new_order);
+                        allSellOrderHpx.Add(new_order);
+                    }
+                }
+                allBuyOrderHpx.Sort((x, y) => -(x.Price).CompareTo(y.Price));
+                allSellOrderHpx.Sort((x, y) => (x.Price).CompareTo(y.Price));
+            }
+        }
+        private bool startflag = true;
+        private List<Order> allBuyOrderHpx = new List<Order>();
+        private List<Order> allSellOrderHpx = new List<Order>();
         private void LiquidBot()
         {
+            InitHpxOrder();
             if (ordersState != null)
                 ordersState.Clear();
             var config = _configStore.Config;
@@ -643,10 +678,23 @@ namespace Rinjani
             }
             else
             {
-                bool exe_flag = true;
                 GetOrdersState(1, 0, Broker.Hpx);
                 if (ordersState == null)
                     return;
+                var buyOrdersState = ordersState.Where(q => q.type == 0);
+                foreach (var orderState in buyOrdersState)
+                {
+                    var order = allBuyOrderHpx.Where(q => orderState.id == q.BrokerOrderId).FirstOrDefault();
+                    if (order == null)
+                    {
+                        Sleep(config.SleepAfterSend);
+                        order = new Order(Broker.Hpx, OrderSide.Buy, orderState.total_amount, orderState.price, OrderType.Limit);
+                        orderState.SetOrder(order);
+                        allBuyOrderHpx.Add(order);
+                        allBuyOrderHpx.Sort((x, y) => -(x.Price).CompareTo(y.Price));
+                    }
+                }
+                bool exe_flag = true;
                 while (exe_flag)
                 {
                     exe_flag = false;
@@ -814,11 +862,23 @@ namespace Rinjani
             }
             else
             {
-                bool exe_flag = true;
                 GetOrdersState(1, 1, Broker.Hpx);
                 if (ordersState == null)
                     return;
-
+                var buyOrdersState = ordersState.Where(q => q.type == 1);
+                foreach (var orderState in buyOrdersState)
+                {
+                    var order = allSellOrderHpx.Where(q => orderState.id == q.BrokerOrderId).FirstOrDefault();
+                    if (order == null)
+                    {
+                        Sleep(config.SleepAfterSend);
+                        order = new Order(Broker.Hpx, OrderSide.Sell, orderState.total_amount, orderState.price, OrderType.Limit);
+                        orderState.SetOrder(order);
+                        allSellOrderHpx.Add(order);
+                        allSellOrderHpx.Sort((x, y) => (x.Price).CompareTo(y.Price));
+                    }
+                }
+                bool exe_flag = true;
                 while (exe_flag)
                 {
                     exe_flag = false;
@@ -952,9 +1012,10 @@ namespace Rinjani
         void PrintOrderInfo(List<Order> buyOrders, List<Order> sellOrders)
         {
             var cpyBidZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Bid)
-                 .Where(q => q.Broker == Broker.Zb).OrderByDescending(q => q.Price);
+                 .Where(q => q.Broker == Broker.Zb).OrderByDescending(q => q.Price).Take(_configStore.Config.CopyQuantity);
             var cpyAskZb = _quoteAggregator.Quotes.Where(q => q.Side == QuoteSide.Ask)
-                .Where(q => q.Broker == Broker.Zb).OrderByDescending(q => q.Price);
+                .Where(q => q.Broker == Broker.Zb).OrderBy(q => q.Price).Take(_configStore.Config.CopyQuantity)
+                .OrderByDescending(q => q.Price);
 
             Log.Info("Zb当前委托卖/买单:");
             int count = 0;

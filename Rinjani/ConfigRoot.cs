@@ -24,5 +24,6 @@ namespace Rinjani
         public int MaxRetryCount { get; set; } = 30;
         public bool CancelAllOrders { get; set; } //删除所有Hpx订单
         public int OrderStatusCheckInterval { get; set; } = 3000;
+        public string EmailAddress { get; set; }
     }
 }

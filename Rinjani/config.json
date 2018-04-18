@@ -17,7 +17,7 @@
   "MaxRetryCount": "1000",
   "CancelAllOrders": "false", //删除HPX所有下单
   "OrderStatusCheckInterval": "2000",
-  "EmailAddress": "mail@mail.com",
+  "EmailAddress": "gongxin0523@163.com",
   "Brokers": [
     {
       "Broker": "Zb",
