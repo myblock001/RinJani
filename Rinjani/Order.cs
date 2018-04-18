@@ -8,16 +8,14 @@ namespace Rinjani
 {
     public class Order
     {
-        public Order(Broker broker, OrderSide side, decimal size, decimal price, CashMarginType cashMarginType,
-            OrderType orderType, int leverageLevel)
+        public Order(Broker broker, OrderSide side, decimal size, decimal price,
+            OrderType orderType)
         {
             Broker = broker;
             Size = size;
             Side = side;
             Price = price;
-            CashMarginType = cashMarginType;
             Type = orderType;
-            LeverageLevel = leverageLevel;
         }
 
         public Order()
@@ -26,12 +24,10 @@ namespace Rinjani
 
         public Broker Broker { get; set; }
         public OrderSide Side { get; set; }
-        public string Symbol { get; set; } = "BTCJPY";
-        public CashMarginType CashMarginType { get; set; }
+        public string Symbol { get; set; } = "";
         public OrderType Type { get; set; } = OrderType.Limit;
         public decimal Size { get; set; }
         public decimal Price { get; set; }
-        public int LeverageLevel { get; set; }
         public TimeInForce TimeInForce { get; set; } = TimeInForce.None;
 
         public Guid Id { get; } = Guid.NewGuid();

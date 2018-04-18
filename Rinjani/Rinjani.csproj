@@ -93,7 +93,6 @@
   <ItemGroup>
     <Compile Include="AppRoot.cs" />
     <Compile Include="BrokerAdapterRouter.cs" />
-    <Compile Include="CashMarginType.cs" />
     <Compile Include="ConfigValidator.cs" />
     <Compile Include="CoreModule.cs" />
     <Compile Include="Execution.cs" />
@@ -168,7 +167,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties config_1json__JSONSchema="http://json.schemastore.org/jsbeautifyrc-nested" />
+      <UserProperties config_1json__JSONSchema="http://json.schemastore.org/chrome-manifest" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>

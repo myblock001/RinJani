@@ -5,8 +5,8 @@
   "LiquidBot": "true", //流动性机器人功能
   "VolumeRatio": "20", //下单量比例20%,LiquidBot为true时有效
   "RemovalRatio": "0.1", //去除比例，[-RemovalRatio,RemovalRatio]之间的订单不搬,LiquidBot为true时有效
-  "CopyQuantity": "5",
-  "PriceMergeSize": "0.01",
+  "CopyQuantity": "5", //复制委托单数量
+  "PriceMergeSize": "0.001",
   "MaxSize": "100",
   "MinSize": "0.01",
   "ArbitragePoint": "0.1", //套利开启点 百分比
@@ -15,21 +15,31 @@
   "IterationInterval": "2000",
   "SleepAfterSend": "1000",
   "MaxRetryCount": "1000",
+  "CancelAllOrders": "false", //删除HPX所有下单
   "OrderStatusCheckInterval": "2000",
+  "EmailAddress": "mail@mail.com",
   "Brokers": [
     {
       "Broker": "Zb",
       "Enabled": "true",
       "Key": "ebb1fb12-0e1c-4031-9224-386dfab470eb",
       "Secret": "f774d735-bb49-4ccd-a1de-f686d9bec27b",
-      "CashMarginType": "Cash"
+      "Leg1": "HSR", //交易对的第一个币种
+      "Leg2": "QC", //交易对的第二个币种,稳定货币
+      "Leg2ExRate": "1", //Leg2汇率
+      "Leg1ThresholdSendEmail": "1", //Leg1余额低于该值时，发送电子邮件到EmailAddress
+      "Leg2ThresholdSendEmail": "1" //Leg2余额低于该值时，发送电子邮件到EmailAddress
     },
     {
       "Broker": "Hpx",
       "Enabled": "true",
       "Key": "aka0c2e133b1ff4367",
       "Secret": "4513c68f0c324127912c55fe21d11ffe",
-      "CashMarginType": "Cash"
+      "Leg1": "HSR", //交易对的第一个币种
+      "Leg2": "CNYT", //交易对的第二个币种,稳定货币
+      "Leg2ExRate": "1", //Leg2汇率
+      "Leg1ThresholdSendEmail": "1", //Leg1余额低于该值时，发送电子邮件到EmailAddress
+      "Leg2ThresholdSendEmail": "1" //Leg2余额低于该值时，发送电子邮件到EmailAddress
     }
   ]
 }

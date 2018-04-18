@@ -29,7 +29,6 @@ namespace Rinjani.Tests
                     new BrokerConfig
                     {
                         Broker = Broker.Hpx,
-                        CashMarginType = CashMarginType.Cash,
                         Key = "",
                         Secret = ""
                     }
@@ -49,23 +48,7 @@ namespace Rinjani.Tests
         [TestMethod]
         public void CashMarginTypeTest()
         {
-            var allowedType = new[] { CashMarginType.Cash };
-            foreach (CashMarginType cmType in Enum.GetValues(typeof(CashMarginType)))
-            {
-                if (!allowedType.Contains(cmType))
-                {
-                    try
-                    {
-                        _configStore.Object.Config.Brokers[0].CashMarginType = cmType;
-                        var ba = new BrokerAdapter(_restClient.Object, _configStore.Object);
-                        Assert.Fail();
-                    }
-                    catch (NotSupportedException ex)
-                    {
-                        Debug.WriteLine(ex.Message);
-                    }
-                }
-            }
+           
         }
 
         [TestMethod]

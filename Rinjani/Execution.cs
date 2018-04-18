@@ -8,7 +8,6 @@ namespace Rinjani
         {
             Broker = order.Broker;
             BrokerOrderId = order.BrokerOrderId;
-            CashMarginType = order.CashMarginType;
             Side = order.Side;
             Symbol = order.Symbol;
         }
@@ -16,7 +15,6 @@ namespace Rinjani
         public Guid Id { get; } = Guid.NewGuid();
         public Broker Broker { get; set; } = Broker.None;
         public string BrokerOrderId { get; set; }
-        public CashMarginType CashMarginType { get; set; }
         public decimal Size { get; set; }
         public decimal Price { get; set; }
         public DateTime ExecTime { get; set; }

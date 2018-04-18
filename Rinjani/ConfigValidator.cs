@@ -19,20 +19,6 @@ namespace Rinjani
             MustBePositive(config.PriceMergeSize, nameof(config.PriceMergeSize));
             MustBePositive(config.QuoteRefreshInterval, nameof(config.QuoteRefreshInterval));
             MustBePositive(config.SleepAfterSend, nameof(config.SleepAfterSend));
-
-            var zb = config.Brokers.FirstOrDefault(b => b.Broker == Broker.Zb);
-            if (IsEnabled(zb))
-            {
-                ThrowIf(zb.CashMarginType != CashMarginType.Cash,
-                    "CashMarginType must be Cash for Zb.");
-            }
-
-            var hpx = config.Brokers.FirstOrDefault(b => b.Broker == Broker.Hpx);
-            if (IsEnabled(hpx))
-            {
-                ThrowIf(hpx.CashMarginType != CashMarginType.Cash,
-                      "CashMarginType must be Cash for Hpx.");
-            }
         }
 
         private void MustBePositive(int number, string name)

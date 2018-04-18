@@ -49,9 +49,7 @@ namespace Rinjani.Tests
                 Broker = broker,
                 Size = 0.01m,
                 Price = targetAsk,
-                Side = OrderSide.Buy,
-                CashMarginType = brokerConfig.CashMarginType,
-                LeverageLevel = brokerConfig.LeverageLevel
+                Side = OrderSide.Buy
             };
             Debug.WriteLine(order);
             Assert.AreEqual(OrderStatus.PendingNew, order.Status);
@@ -96,10 +94,9 @@ namespace Rinjani.Tests
             var broker = Broker.Zb;
             var configStore = new JsonConfigStore(ConfigPath, new List<IConfigValidator>());
             var brokerConfig = configStore.Config.Brokers.First(x => x.Broker == broker);
-            brokerConfig.CashMarginType = CashMarginType.Cash;
             var ba = new Zb.BrokerAdapter(new RestClient(), configStore);
             var hsrPosition = ba.FetchQuotes();
-            Debug.WriteLine($"{broker} {brokerConfig.CashMarginType}: {hsrPosition}");
+            Debug.WriteLine($"{broker} {hsrPosition}");
         }
 
         [TestMethod]
@@ -109,10 +106,9 @@ namespace Rinjani.Tests
             var broker = Broker.Zb;
             var configStore = new JsonConfigStore(ConfigPath, new List<IConfigValidator>());
             var brokerConfig = configStore.Config.Brokers.First(x => x.Broker == broker);
-            brokerConfig.CashMarginType = CashMarginType.Cash;
             var ba = new Zb.BrokerAdapter(new RestClient(), configStore);
             var hsrPosition = ba.GetBalance();
-            Debug.WriteLine($"{broker} {brokerConfig.CashMarginType}: {hsrPosition}");
+            Debug.WriteLine($"{broker} {hsrPosition}");
         }
 
 
@@ -122,17 +118,9 @@ namespace Rinjani.Tests
             var broker = Broker.Hpx;
             var configStore = new JsonConfigStore(ConfigPath, new List<IConfigValidator>());
             var brokerConfig = configStore.Config.Brokers.First(x => x.Broker == broker);
-            var dic = new Dictionary<CashMarginType, BrokerBalance>();
-            foreach (CashMarginType cashMarginEnum in Enum.GetValues(typeof(CashMarginType)))
-            {
-                if (cashMarginEnum != CashMarginType.Cash)
-                    continue;
-                brokerConfig.CashMarginType = cashMarginEnum;
-                var ba = new Hpx.BrokerAdapter(new RestClient(), configStore);
-                var balance = ba.GetBalance();
-                Debug.WriteLine($"{broker} {cashMarginEnum}: {balance}");
-                dic.Add(cashMarginEnum, balance);
-            }
+
+            var ba = new Hpx.BrokerAdapter(new RestClient(), configStore);
+            var balance = ba.GetBalance();
         }
 
         [TestMethod]
@@ -143,10 +131,8 @@ namespace Rinjani.Tests
             var broker = Broker.Hpx;
             var configStore = new JsonConfigStore(ConfigPath, new List<IConfigValidator>());
             var brokerConfig = configStore.Config.Brokers.First(x => x.Broker == broker);
-            brokerConfig.CashMarginType = CashMarginType.Cash;
             var ba = new Hpx.BrokerAdapter(new RestClient(), configStore);
             var hsrPosition = ba.GetBalance();
-            Debug.WriteLine($"{broker} {brokerConfig.CashMarginType}: {hsrPosition}");
         }
     }
 }

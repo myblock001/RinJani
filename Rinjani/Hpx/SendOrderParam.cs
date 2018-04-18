@@ -6,16 +6,6 @@ namespace Rinjani.Hpx
     {
         public SendOrderParam(Order order)
         {
-            int productId;
-            switch (order.Symbol)
-            {
-                case "BTCJPY":
-                    productId = 5;
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
-
             string orderType;
             switch (order.Type)
             {
@@ -30,23 +20,10 @@ namespace Rinjani.Hpx
                 default:
                     throw new NotSupportedException();
             }
-
-            string orderDirection;
-            switch (order.CashMarginType)
-            {
-                case CashMarginType.Cash:
-                    orderDirection = null;
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
-
             order_type = orderType;
-            product_id = productId;
             side = order.Side.ToString().ToLower();
             quantity = order.Size;
-            leverage_level = order.LeverageLevel;
-            order_direction = orderDirection;
+            order_direction = null;
         }
 
         public string order_type { get; set; }

@@ -31,7 +31,7 @@ namespace Rinjani.Tests
         [TestMethod]
         public void SendTest()
         {            
-            var order = new Order(Broker.Zb, OrderSide.Buy, 0.001m, 500000, CashMarginType.Cash, OrderType.Limit, 0);
+            var order = new Order(Broker.Zb, OrderSide.Buy, 0.001m, 500000, OrderType.Limit);
             _target.Send(order);
             _baZb.Verify(x => x.Send(order));         
         }
@@ -53,7 +53,7 @@ namespace Rinjani.Tests
         [TestMethod]
         public void GetOrderStateTest()
         {
-            var order = new Order(Broker.Hpx, OrderSide.Buy, 0.001m, 500000, CashMarginType.Cash, OrderType.Limit, 0);
+            var order = new Order(Broker.Hpx, OrderSide.Buy, 0.001m, 500000, OrderType.Limit);
             _target.Refresh(order);
             _baHpx.Verify(x => x.Refresh(order));
         }
