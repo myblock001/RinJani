@@ -650,8 +650,7 @@ namespace Rinjani
                     Log.Info($"正在复制买单，当前价格{bid.Price},当前数量{cpyVol}");
                     bid.Broker = Broker.Hpx;
                     bid.Price = bid.Price * _configZb.Leg2ExRate / _configHpx.Leg2ExRate;
-                    //SendOrder(bid, cpyVol, OrderType.Limit);
-                    SendOrder(bid, 0.02m, OrderType.Limit);
+                    SendOrder(bid, cpyVol, OrderType.Limit);
 
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
                     {
@@ -784,8 +783,7 @@ namespace Rinjani
                     Log.Info($"正在复制买单，当前价格{bid.Price},当前数量{cpyVol}");
                     bid.Broker = Broker.Hpx;
                     bid.Price = bid.Price * _configZb.Leg2ExRate / _configHpx.Leg2ExRate;
-                    //SendOrder(bid, cpyVol, OrderType.Limit);
-                    SendOrder(bid, 0.02m, OrderType.Limit);
+                    SendOrder(bid, cpyVol, OrderType.Limit);
                     Sleep(config.SleepAfterSend);
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == "0x3fffff")
                     {
@@ -834,8 +832,7 @@ namespace Rinjani
                     Log.Info($"正在复制卖单，当前价格{ask.Price},当前数量{cpyVol}");
                     ask.Broker = Broker.Hpx;
                     ask.Price = ask.Price * _configZb.Leg2ExRate / _configHpx.Leg2ExRate;
-                    //SendOrder(ask, cpyVol, OrderType.Limit);
-                    SendOrder(ask, 0.02m, OrderType.Limit);
+                    SendOrder(ask, cpyVol, OrderType.Limit);
 
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == null)
                     {
@@ -969,8 +966,7 @@ namespace Rinjani
                     Log.Info($"正在复制卖单，当前价格{ask.Price},当前数量{cpyVol}");
                     ask.Broker = Broker.Hpx;
                     ask.Price = ask.Price * _configZb.Leg2ExRate / _configHpx.Leg2ExRate;
-                    //SendOrder(ask, cpyVol, OrderType.Limit);
-                    SendOrder(ask, 0.02m, OrderType.Limit);
+                    SendOrder(ask, cpyVol, OrderType.Limit);
                     Sleep(config.SleepAfterSend);
                     if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == "0x3fffff")
                     {
