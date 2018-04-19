@@ -68,7 +68,7 @@ namespace Rinjani
             Log.Info(Util.Hr(21) + "BALANCE" + Util.Hr(21));
             foreach (var balance in BalanceMap)
             {
-                Log.Info(balance.Value);
+                Log.Info($"{balance.Value.Broker}  Leg1={balance.Value.Leg1} Leg2={balance.Value.Leg2}");
             }
             Log.Info(Util.Hr(50));
         }

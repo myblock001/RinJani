@@ -27,8 +27,8 @@
       "Leg1": "HSR", //交易对的第一个币种
       "Leg2": "QC", //交易对的第二个币种,稳定货币
       "Leg2ExRate": "1", //Leg2汇率
-      "Leg1ThresholdSendEmail": "1", //Leg1余额低于该值时，发送电子邮件到EmailAddress
-      "Leg2ThresholdSendEmail": "1" //Leg2余额低于该值时，发送电子邮件到EmailAddress
+      "Leg1ThresholdSendEmail": "0.001", //Leg1余额低于该值时，发送电子邮件到EmailAddress
+      "Leg2ThresholdSendEmail": "0.001" //Leg2余额低于该值时，发送电子邮件到EmailAddress
     },
     {
       "Broker": "Hpx",
@@ -38,8 +38,8 @@
       "Leg1": "HSR", //交易对的第一个币种
       "Leg2": "CNYT", //交易对的第二个币种,稳定货币
       "Leg2ExRate": "1", //Leg2汇率
-      "Leg1ThresholdSendEmail": "1", //Leg1余额低于该值时，发送电子邮件到EmailAddress
-      "Leg2ThresholdSendEmail": "1" //Leg2余额低于该值时，发送电子邮件到EmailAddress
+      "Leg1ThresholdSendEmail": "0.001", //Leg1余额低于该值时，发送电子邮件到EmailAddress
+      "Leg2ThresholdSendEmail": "0.001" //Leg2余额低于该值时，发送电子邮件到EmailAddress
     }
   ]
 }
