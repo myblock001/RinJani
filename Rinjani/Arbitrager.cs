@@ -1167,7 +1167,7 @@ namespace Rinjani
                         return;
                     }
                     allSellOrderHpx.Add(_activeOrders[_activeOrders.Count - 1]);
-                    allSellOrderHpx.Sort((x, y) => -(x.Price).CompareTo(y.Price));
+                    allSellOrderHpx.Sort((x, y) => (x.Price).CompareTo(y.Price));
                     PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                     _activeOrders.Clear();
                     CheckOrdersState(highestBidPrice, lowestAskPrice);
