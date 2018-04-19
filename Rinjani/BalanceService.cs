@@ -19,9 +19,6 @@ namespace Rinjani
         {
             _configStore = configStore ?? throw new ArgumentNullException(nameof(configStore));
             _brokerAdapterRouter = brokerAdapterRouter ?? throw new ArgumentNullException(nameof(brokerAdapterRouter));
-            //_timer = timer;
-            //Util.StartTimer(timer, _configStore.Config.BalanceRefreshInterval, OnTimerTriggered);
-            //Refresh();
         }
 
         public IDictionary<Broker, BrokerBalance> BalanceMap { get; private set; } =
@@ -68,6 +65,8 @@ namespace Rinjani
             Log.Info(Util.Hr(21) + "BALANCE" + Util.Hr(21));
             foreach (var balance in BalanceMap)
             {
+                if (balance.Value == null)
+                    continue;
                 Log.Info($"{balance.Value.Broker}  Leg1={balance.Value.Leg1} Leg2={balance.Value.Leg2}");
             }
             Log.Info(Util.Hr(50));

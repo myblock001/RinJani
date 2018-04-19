@@ -69,9 +69,7 @@ namespace Rinjani.Tests
                               ""leverage_level"": 1,
                               ""source_exchange"": ""QUOINE"",
                               ""product_id"": 1,
-                              ""product_code"": ""CASH"",
-                              ""funding_currency"": ""JPY"",
-                              ""currency_pair_code"": ""BTCJPY"",
+                              ""product_code"": ""CASH""
                               ""order_fee"": ""0.0""
                             }";
             SetupRestMock<SendReply>(content);
@@ -105,8 +103,6 @@ namespace Rinjani.Tests
                               ""source_exchange"": ""QUOINE"",
                               ""product_id"": 1,
                               ""product_code"": ""CASH"",
-                              ""funding_currency"": ""JPY"",
-                              ""currency_pair_code"": ""BTCJPY"",
                               ""order_fee"": ""0.0""
                             }";
             SetupRestMock<SendReply>(content);
@@ -192,15 +188,13 @@ namespace Rinjani.Tests
                             ""trader_id"": 4807,
                             ""status"": ""active"",
                             ""product_code"": ""CASH"",
-                            ""currency_pair_code"": ""BTCJPY"",
                             ""position"": ""0.1"",
                             ""balance"": ""10000.1773"",
                             ""created_at"": 1421992165,
                             ""updated_at"": 1457242996,
                             ""pusher_channel"": ""trading_account_1759"",
                             ""margin_percent"": ""0.1"",
-                            ""product_id"": 1,
-                            ""funding_currency"": ""JPY""
+                            ""product_id"": 1
                             }
                         ]";
             SetupRestMock<List<TradingAccounts>>(content);

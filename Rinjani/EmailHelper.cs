@@ -7,13 +7,13 @@ using System.Net.Mail;
 
 namespace Rinjani
 {
-    class EmailHelper
+    public class EmailHelper
     {
         public static void SendMailUse(string address,string title, string content)
         {
-            string host = "smtp.163.com";// 邮件服务器smtp.163.com表示网易邮箱服务器    
-            string userName = "baosiqima1@163.com";// 发送端账号   
-            string password = "myblock001";// 发送端密码(这个客户端重置后的密码)
+            string host = "smtp.sohu.com";// 邮件服务器smtp.163.com表示网易邮箱服务器    
+            string userName = "santasolos@sohu.com";// 发送
+            string password = "SQWWYYGMYMHPZBa1";// 发送端密码(这个客户端重置后的密码)
 
             SmtpClient client = new SmtpClient();
             client.DeliveryMethod = SmtpDeliveryMethod.Network;//指定电子邮件发送方式    
@@ -50,6 +50,11 @@ namespace Rinjani
             {
                 Console.WriteLine(ex.Message, "发送邮件出错");
             }
+        }
+
+        public void SendMailUse(string v1, object address, string v2, object title, string v3, object content)
+        {
+            throw new NotImplementedException();
         }
     }
 }

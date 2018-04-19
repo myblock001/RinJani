@@ -95,6 +95,7 @@
     <Compile Include="BrokerAdapterRouter.cs" />
     <Compile Include="ConfigValidator.cs" />
     <Compile Include="CoreModule.cs" />
+    <Compile Include="CSVFileHelper.cs" />
     <Compile Include="EmailHelper.cs" />
     <Compile Include="Execution.cs" />
     <Compile Include="IConfigValidator.cs" />

@@ -1,13 +1,13 @@
 // Please rename config_default.json to config.json
 {
   "DemoMode": "false",
-  "Arbitrage": "false", //套利功能
+  "Arbitrage": "true", //套利功能
   "LiquidBot": "true", //流动性机器人功能
   "VolumeRatio": "20", //下单量比例20%,LiquidBot为true时有效
   "RemovalRatio": "0.1", //去除比例，[-RemovalRatio,RemovalRatio]之间的订单不搬,LiquidBot为true时有效
   "CopyQuantity": "5", //复制委托单数量
   "PriceMergeSize": "0.001",
-  "MaxSize": "100",
+  "MaxSize": "0.02",
   "MinSize": "0.01",
   "ArbitragePoint": "0.1", //套利开启点 百分比
   "CancelPoint": "0.1", //取消点 百分比
@@ -17,7 +17,7 @@
   "MaxRetryCount": "1000",
   "CancelAllOrders": "false", //删除HPX所有下单
   "OrderStatusCheckInterval": "2000",
-  "EmailAddress": "gongxin0523@163.com",
+  "EmailAddress": "xxxxxxxxx@163.com",
   "Brokers": [
     {
       "Broker": "Zb",
