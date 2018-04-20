@@ -29,6 +29,21 @@ namespace Rinjani.Zb
             {
                 order.Status = OrderStatus.PartiallyFilled;
             }
+            switch (status)
+            {
+                case 1:
+                    order.Status = OrderStatus.New;
+                    break;
+                case 2:
+                    order.Status = OrderStatus.PartiallyFilled;
+                    break;
+                case 3:
+                    order.Status = OrderStatus.Filled;
+                    break;
+                case 5:
+                    order.Status = OrderStatus.Canceled;
+                    break;
+            }
             order.LastUpdated = DateTime.Now;
         }
     }

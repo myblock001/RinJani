@@ -17,10 +17,12 @@ namespace Rinjani
             dt.Columns.Add("Broker1OrderSide");
             dt.Columns.Add("Broker1Price");
             dt.Columns.Add("Broker1Volume");
+            dt.Columns.Add("Broker1Total");
             dt.Columns.Add("Broker2ID");
             dt.Columns.Add("Broker2OrderSide");
             dt.Columns.Add("Broker2Price");
             dt.Columns.Add("Broker2Volume");
+            dt.Columns.Add("Broker2Total");
             string fullPath = Environment.CurrentDirectory + "\\order.csv";
             File.Delete(fullPath);
         }
@@ -35,11 +37,13 @@ namespace Rinjani
                 dr["Broker1ID"] = order_queue[0].BrokerOrderId;
                 dr["Broker1OrderSide"] = order_queue[0].Side.ToString();
                 dr["Broker1Price"] = order_queue[0].Price;
-                dr["Broker1Volume"] = order_queue[0].FilledSize;
+                dr["Broker1Volume"] = i==1?order_queue[0].FilledSize:0;
+                dr["Broker1Total"] = order_queue[0].Price* (i == 1 ? order_queue[0].FilledSize : 0);
                 dr["Broker2ID"] = order_queue[i].BrokerOrderId;
                 dr["Broker2OrderSide"] = order_queue[i].Side.ToString();
                 dr["Broker2Price"] = order_queue[i].Price;
                 dr["Broker2Volume"] = order_queue[i].FilledSize;
+                dr["Broker2Total"] = order_queue[i].Price * order_queue[i].FilledSize;
                 dt.Rows.Add(dr);
             }
             SaveCSV(dt);
