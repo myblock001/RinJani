@@ -142,7 +142,7 @@ namespace Rinjani
             {
                 return;
             }
-            decimal price = Math.Max(bestBidZb.Price, bestBidZb.BasePrice) - 0.01m;
+            decimal price = Util.RoundDown(Math.Max(bestBidZb.Price, bestBidZb.BasePrice) - 0.01m, 2);
             SpreadAnalysisResult result = new SpreadAnalysisResult
             {
                 BestOrderZb = new Quote(Broker.Zb, QuoteSide.Ask, price, bestBidZb.BasePrice, _activeOrders[_activeOrders.Count - 1].FilledSize),
@@ -161,7 +161,7 @@ namespace Rinjani
             {
                 return;
             }
-            decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice) + 0.01m;
+            decimal price = Util.RoundDown(Math.Min(bestAskZb.Price, bestAskZb.BasePrice) + 0.01m,2);
             SpreadAnalysisResult result = new SpreadAnalysisResult
             {
                 BestOrderZb = new Quote(Broker.Zb, QuoteSide.Bid, price, bestAskZb.BasePrice, _activeOrders[_activeOrders.Count - 1].FilledSize),
@@ -302,7 +302,7 @@ namespace Rinjani
                 return;
             }
             Log.Info(Resources.SendingOrderTargettingQuote, bestOrderZb);
-            SendOrder(bestOrderZb, bestOrderZb.Volume, OrderType.Limit);
+            SendOrder(bestOrderZb, Util.RoundDown(bestOrderZb.Volume,2), OrderType.Limit);
             if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == "0x3fffff")
             {
                 Log.Info("Zb余额不足");
@@ -348,7 +348,7 @@ namespace Rinjani
                     {
                         ZbFilledSize += _activeOrders[j].FilledSize;
                     }
-                    if (ZbFilledSize>0 && ZbFilledSize >= _activeOrders[0].FilledSize-0.001m)
+                    if (ZbFilledSize>0 && ZbFilledSize >= _activeOrders[0].FilledSize-0.01m)
                     {
                         _brokerAdapterRouter.Cancel(order);
                         order.Status = OrderStatus.Filled;
@@ -416,7 +416,7 @@ namespace Rinjani
                                 {
                                     ZbFilledSize += _activeOrders[j].FilledSize;
                                 }
-                                if (ZbFilledSize > 0 && ZbFilledSize >= _activeOrders[0].FilledSize - 0.001m)
+                                if (ZbFilledSize > 0 && ZbFilledSize >= _activeOrders[0].FilledSize - 0.01m)
                                 {
                                     _brokerAdapterRouter.Cancel(order);
                                     Sleep(config.SleepAfterSend);
@@ -450,6 +450,8 @@ namespace Rinjani
                         ZbFilledSize += _activeOrders[j].FilledSize;
                         _spendCash += _activeOrders[j].FilledSize * _activeOrders[j].Price;
                     }
+                    if (ZbFilledSize == 0)
+                        return;
                     ZbAverageFilledPrice = _spendCash / ZbFilledSize;
                     decimal profit = 0;
                     if (order.Side == OrderSide.Buy)
@@ -1004,6 +1006,8 @@ namespace Rinjani
                         ZbFilledSize += _activeOrders[j].FilledSize;
                         _spendCash += _activeOrders[j].FilledSize * _activeOrders[j].Price;
                     }
+                    if (ZbFilledSize == 0)
+                        return;
                     ZbAverageFilledPrice = _spendCash / ZbFilledSize;
                     decimal profit = 0;
                     if (order.Side == OrderSide.Buy)
