@@ -66,7 +66,7 @@ namespace Rinjani
             }
             decimal price = Math.Max(bestBidZb.Price, bestBidZb.BasePrice)*_configZb.Leg2ExRate - 0.01m;
             decimal invertedSpread = price - bestAskHpx.Price * _configHpx.Leg2ExRate;
-            decimal availableVolume = Util.RoundDown(Math.Min(bestBidZb.Volume, bestAskHpx.Volume), 3);
+            decimal availableVolume = Util.RoundDown(Math.Min(bestBidZb.Volume, bestAskHpx.Volume), 2);
             var balanceMap = _positionService.BalanceMap;
             decimal allowedSizeHpx = balanceMap[bestAskHpx.Broker].Leg2 / bestAskHpx.Price;
             decimal allowedSizeZb = balanceMap[bestBidZb.Broker].Leg1;
@@ -108,7 +108,7 @@ namespace Rinjani
             decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice)*_configZb.Leg2ExRate + 0.01m;
             decimal invertedSpread = bestBidHpx.Price * _configHpx.Leg2ExRate - price;
 
-            decimal availableVolume = Util.RoundDown(Math.Min(bestAskZb.Volume, bestBidHpx.Volume), 3);
+            decimal availableVolume = Util.RoundDown(Math.Min(bestAskZb.Volume, bestBidHpx.Volume), 2);
 
             var balanceMap = _positionService.BalanceMap;
             decimal allowedSizeHpx = balanceMap[bestBidHpx.Broker].Leg1;
@@ -142,7 +142,7 @@ namespace Rinjani
             {
                 return;
             }
-            decimal price = Util.RoundDown(Math.Max(bestBidZb.Price, bestBidZb.BasePrice) - 0.01m, 2);
+            decimal price = Math.Max(bestBidZb.Price, bestBidZb.BasePrice) - 0.01m;
             SpreadAnalysisResult result = new SpreadAnalysisResult
             {
                 BestOrderZb = new Quote(Broker.Zb, QuoteSide.Ask, price, bestBidZb.BasePrice, _activeOrders[_activeOrders.Count - 1].FilledSize),
@@ -161,7 +161,7 @@ namespace Rinjani
             {
                 return;
             }
-            decimal price = Util.RoundDown(Math.Min(bestAskZb.Price, bestAskZb.BasePrice) + 0.01m,2);
+            decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice) + 0.01m;
             SpreadAnalysisResult result = new SpreadAnalysisResult
             {
                 BestOrderZb = new Quote(Broker.Zb, QuoteSide.Bid, price, bestAskZb.BasePrice, _activeOrders[_activeOrders.Count - 1].FilledSize),
@@ -302,7 +302,9 @@ namespace Rinjani
                 return;
             }
             Log.Info(Resources.SendingOrderTargettingQuote, bestOrderZb);
-            SendOrder(bestOrderZb, Util.RoundDown(bestOrderZb.Volume,2), OrderType.Limit);
+            decimal volume = Util.RoundDown(bestOrderZb.Volume, 2)+0.01m;
+            volume = volume == 0 ? 0.01m : volume;
+            SendOrder(bestOrderZb, volume, OrderType.Limit);
             if (_activeOrders[_activeOrders.Count - 1].BrokerOrderId == "0x3fffff")
             {
                 Log.Info("Zb余额不足");

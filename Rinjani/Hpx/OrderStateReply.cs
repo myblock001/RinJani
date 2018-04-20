@@ -33,16 +33,16 @@ namespace Rinjani.Hpx
             switch(status)
             {
                 case 1:
-                    order.Status = OrderStatus.Canceled;
-                    break;
-                case 2:
-                    order.Status = OrderStatus.Filled;
-                    break;
-                case 0:
                     order.Status = OrderStatus.New;
                     break;
-                case 3:
+                case 2:
                     order.Status = OrderStatus.PartiallyFilled;
+                    break;
+                case 3:
+                    order.Status = OrderStatus.Filled;
+                    break;
+                case 5:
+                    order.Status = OrderStatus.Canceled;
                     break;
             }
             order.LastUpdated = DateTime.Now;
