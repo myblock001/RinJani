@@ -329,6 +329,15 @@ namespace Rinjani
             foreach (var i in Enumerable.Range(1, config.MaxRetryCount))
             {
                 var order = _activeOrders[_activeOrders.Count - 1];
+                if (i == config.MaxRetryCount)
+                {
+                    Log.Warn(Resources.MaxRetryCountReachedCancellingThePendingOrders);
+                    if (order.Status != OrderStatus.Filled)
+                    {
+                        _brokerAdapterRouter.Cancel(order);
+                    }
+                    break;
+                }
                 Log.Info(Resources.OrderCheckAttempt, i);
                 Log.Info(Resources.CheckingIfBothLegsAreDoneOrNot);
 
@@ -472,16 +481,6 @@ namespace Rinjani
                     Log.Info(Resources.ProfitIs, profit);
                     csvFileHelper.UpdateCSVFile(_activeOrders);
                     _activeOrders.Clear();
-                    break;
-                }
-
-                if (i == config.MaxRetryCount)
-                {
-                    Log.Warn(Resources.MaxRetryCountReachedCancellingThePendingOrders);
-                    if (order.Status != OrderStatus.Filled)
-                    {
-                        _brokerAdapterRouter.Cancel(order);
-                    }
                     break;
                 }
                 Sleep(config.OrderStatusCheckInterval);
