@@ -35,10 +35,6 @@ namespace Rinjani.Tests
             var mTimer = new Mock<ITimer>();
 
             var ps = new BalanceService(configStore, baRouter, mTimer.Object);
-            var positions = ps.BalanceMap.Values.ToList();
-            var ccPos = positions.First(x => x.Broker == Broker.Zb);
-
-            Assert.IsTrue(positions.Count == 2);
         }
     }
 }

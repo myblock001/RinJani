@@ -11,10 +11,8 @@ namespace Rinjani
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private readonly IList<IBrokerAdapter> _brokerAdapters;
         private readonly ConfigRoot _config;
-        private readonly ITimer _timer;
-        private bool _isRunning;
-        private IList<Quote> _quotes;
-
+        private IList<Quote> _hpxquotes;
+        private IList<Quote> _zbquotes;
         public QuoteAggregator(IConfigStore configStore, IList<IBrokerAdapter> brokerAdapters, ITimer timer)
         {
             if (brokerAdapters == null)
@@ -23,60 +21,64 @@ namespace Rinjani
             }
             _config = configStore?.Config ?? throw new ArgumentNullException(nameof(configStore));
             _brokerAdapters = Util.GetEnabledBrokerAdapters(brokerAdapters, configStore);
-            _timer = timer;
-            Util.StartTimer(timer, _config.QuoteRefreshInterval, OnTimerTriggered);
-            Aggregate();
         }
 
-        public event EventHandler QuoteUpdated;
-
-        public IList<Quote> Quotes
+        public IList<Quote> HpxQuotes
         {
-            get => _quotes;
+            get => _hpxquotes;
             private set
             {
-                _quotes = value;
+                _hpxquotes = value;
             }
         }
 
-        public void Dispose()
+        public IList<Quote> ZbQuotes
         {
-            _timer?.Dispose();
-        }
-
-        private void OnTimerTriggered(object sender, ElapsedEventArgs elapsedEventArgs)
-        {
-            if (_isRunning)
+            get => _zbquotes;
+            private set
             {
-                return;
-            }
-            try
-            {
-                _isRunning = true;
-                Aggregate();
-                OnQuoteUpdated();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex);
-                Log.Debug(ex);
-            }
-            finally
-            {
-                _isRunning = false;
+                _zbquotes = value;
             }
         }
-
-        public void Aggregate()
+        private object hpx = new object();
+        public void HpxAggregate()
         {
-            Log.Debug("Aggregating quotes...");
-            Quotes = _brokerAdapters.SelectMany(x => x.FetchQuotes().ToList()).Merge(_config.PriceMergeSize).ToList();
-            Log.Debug("Aggregated.");
+            lock (hpx)
+            {
+                Log.Debug("Aggregating hpxquotes...");
+                HpxQuotes = _brokerAdapters[1].FetchQuotes();
+                Log.Debug("Aggregated.");
+            }
+        }
+        private object zb = new object();
+        public void ZbAggregate()
+        {
+            lock (zb)
+            {
+                Log.Debug("Aggregating quotes...");
+                ZbQuotes = _brokerAdapters[0].FetchQuotes();
+                Log.Debug("Aggregated.");
+            }
         }
 
-        protected virtual void OnQuoteUpdated()
+        public IList<Quote> GetHpxQuote()
         {
-            QuoteUpdated?.Invoke(this, EventArgs.Empty);
+            lock (hpx)
+            {
+                if (HpxQuotes == null)
+                    return new List<Quote>();
+                return HpxQuotes;
+            }
+        }
+
+        public IList<Quote> GetZbQuote()
+        {
+            lock (zb)
+            {
+                if (ZbQuotes == null)
+                    return new List<Quote>();
+                return ZbQuotes;
+            }
         }
     }
 }

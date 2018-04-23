@@ -2,7 +2,7 @@
 
 namespace Rinjani
 {
-    public interface IArbitrager : IDisposable
+    public interface IArbitrager
     {
         void Start();
     }

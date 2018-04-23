@@ -3,9 +3,10 @@ using System.Collections.Generic;
 
 namespace Rinjani
 {
-    public interface IBalanceService : IDisposable
+    public interface IBalanceService
     {
-        IDictionary<Broker, BrokerBalance> BalanceMap { get; }
-        void GetBalances();
+        BrokerBalance BalanceZb { get; }
+        BrokerBalance BalanceHpx { get; }
+        void GetBalance(Broker broker);
     }
 }

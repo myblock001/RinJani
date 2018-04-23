@@ -11,8 +11,6 @@ namespace Rinjani
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private readonly IBrokerAdapterRouter _brokerAdapterRouter;
         private readonly IConfigStore _configStore;
-        //private readonly ITimer _timer;
-        private bool _isRefreshing;
 
         public BalanceService(IConfigStore configStore, IBrokerAdapterRouter brokerAdapterRouter,
             ITimer timer)
@@ -21,65 +19,20 @@ namespace Rinjani
             _brokerAdapterRouter = brokerAdapterRouter ?? throw new ArgumentNullException(nameof(brokerAdapterRouter));
         }
 
-        public IDictionary<Broker, BrokerBalance> BalanceMap { get; private set; } =
-            new Dictionary<Broker, BrokerBalance>();
+        public BrokerBalance BalanceZb { get; private set; } = new BrokerBalance();
+        public BrokerBalance BalanceHpx { get; private set; } = new BrokerBalance();
 
-        public void Dispose()
+        private void LogBalances(BrokerBalance balance)
         {
-            //_timer?.Dispose();
+            Log.Info($"{balance.Broker}  Leg1={balance.Leg1} Leg2={balance.Leg2}");
         }
 
-        private void OnTimerTriggered(object sender, ElapsedEventArgs e)
+        public void GetBalance(Broker broker)
         {
-            Refresh();
-        }
-
-        private void Refresh()
-        {
-            if (_isRefreshing)
-            {
-                return;
-            }
-
-            try
-            {
-                _isRefreshing = true;
-                var config = _configStore.Config;
-                BalanceMap.Clear();
-                foreach (var brokerConfig in config.Brokers.Where(b => b.Enabled))
-                {
-                    BrokerBalance currentBalance = GetBalance(brokerConfig.Broker);
-                    BalanceMap.Add(brokerConfig.Broker, currentBalance);
-                } 
-
-                LogBalances();
-            }
-            finally
-            {
-                _isRefreshing = false;
-            }
-        }
-
-        private void LogBalances()
-        {
-            Log.Info(Util.Hr(21) + "BALANCE" + Util.Hr(21));
-            foreach (var balance in BalanceMap)
-            {
-                if (balance.Value == null)
-                    continue;
-                Log.Info($"{balance.Value.Broker}  Leg1={balance.Value.Leg1} Leg2={balance.Value.Leg2}");
-            }
-            Log.Info(Util.Hr(50));
-        }
-
-        public void GetBalances()
-        {
-            Refresh();
-        }
-
-        private BrokerBalance GetBalance(Broker broker)
-        {
-            return _brokerAdapterRouter.GetBalance(broker);
+            if (broker == Broker.Zb)
+                BalanceZb = _brokerAdapterRouter.GetBalance(broker);
+            else
+                BalanceHpx = _brokerAdapterRouter.GetBalance(broker);
         }
     }
 }

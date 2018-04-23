@@ -44,7 +44,6 @@ namespace Rinjani
             try
             {
                 Log.Info(Resources.StoppingTheService);
-                _arbitrager?.Dispose();
                 _kernel?.Dispose();
                 Log.Info(Resources.SuccessfullyStoppedTheService);
             }

@@ -3,10 +3,11 @@ using System.Collections.Generic;
 
 namespace Rinjani
 {
-    public interface IQuoteAggregator : IDisposable
+    public interface IQuoteAggregator
     {
-        IList<Quote> Quotes { get; }
-        event EventHandler QuoteUpdated;
-        void Aggregate();
+        void HpxAggregate();
+        void ZbAggregate();
+        IList<Quote> GetHpxQuote();
+        IList<Quote> GetZbQuote();
     }
 }

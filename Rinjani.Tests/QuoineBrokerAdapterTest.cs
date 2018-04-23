@@ -121,7 +121,7 @@ namespace Rinjani.Tests
         {
             var configStore = new JsonConfigStore("config.json", new List<IConfigValidator>());
             var ba = new Zb.BrokerAdapter(new RestClient(), configStore);
-            var order = new Order { Broker = Broker.Zb, BrokerOrderId = "2157479", Size = 0.1m };
+            var order = new Order { Broker = Broker.Zb, BrokerOrderId = "2018042215267240", Size = 0.1m };
             ba.Refresh(order);
         }
 

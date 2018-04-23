@@ -52,7 +52,8 @@ namespace Rinjani.Tests
         [TestMethod]
         public void GetOrderStateTest()
         {
-            var order = new Order(Broker.Hpx, OrderSide.Buy, 0.001m, 500000, OrderType.Limit);
+            var order = new Order(Broker.Zb, OrderSide.Buy, 0.001m, 500000, OrderType.Limit);
+            order.BrokerOrderId = "2018042215267240";
             _target.Refresh(order);
             _baHpx.Verify(x => x.Refresh(order));
         }
