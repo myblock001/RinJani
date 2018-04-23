@@ -9,7 +9,7 @@
   "PriceMergeSize": "0.001",
   "MaxSize": "0.02",
   "MinSize": "0.01",
-  "ArbitragePoint": "0.1", //套利开启点 百分比
+  "ArbitragePoint": "5", //套利开启点 百分比
   "CancelPoint": "0.1", //取消点 百分比
   "StopPoint": "0.1", //止损点 百分比
   "IterationInterval": "1000",

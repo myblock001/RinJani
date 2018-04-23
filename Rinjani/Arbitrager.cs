@@ -15,6 +15,7 @@ namespace Rinjani
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private int work_mode = 0;//0/1=arbitrager/liquid bot
         private readonly List<Order> _activeOrders = new List<Order>();
+        private readonly List<Order> _activeOrdersHpx = new List<Order>();
         private readonly IBrokerAdapterRouter _brokerAdapterRouter;
         private readonly IConfigStore _configStore;
         private readonly IBalanceService _positionService;
@@ -379,6 +380,8 @@ namespace Rinjani
                             return;
                         }
                         decimal price = Math.Min(bestAskZb.Price, bestAskZb.BasePrice);
+                        if (retryCount > 4 || price >= _activeOrders[0].Price * (1 - config.StopPoint))
+                            price = Math.Max(bestAskZb.Price, bestAskZb.BasePrice);
                         if (order.Price < price)
                         {
                             Log.Info($"Zb买单价格为{order.Price},小于基准价{price},重新下单");
@@ -389,7 +392,7 @@ namespace Rinjani
                             {
                                 ZbFilledSize += _activeOrders[j].FilledSize;
                             }
-                            if (ZbFilledSize > 0 && ZbFilledSize >= _activeOrders[0].FilledSize - 0.001m)
+                            if (ZbFilledSize > 0 && ZbFilledSize >= _activeOrders[0].FilledSize - 0.01m)
                             {
                                 _brokerAdapterRouter.Cancel(order);
                                 Sleep(config.SleepAfterSend);
@@ -424,6 +427,8 @@ namespace Rinjani
                             return;
                         }
                         decimal price = Math.Max(bestBidZb.Price, bestBidZb.BasePrice);
+                        if (retryCount > 4 || price <= _activeOrders[0].Price * (1 + config.StopPoint))
+                            price = Math.Min(bestBidZb.Price, bestBidZb.BasePrice);                       
                         if (order.Price > price)
                         {
                             Log.Info($"Zb卖单价格为{order.Price},大于基准价{price},重新下单");
@@ -597,6 +602,12 @@ namespace Rinjani
                 }
                 if (_activeOrders.Count > 0)
                     work_mode = 0;
+                else if(_activeOrdersHpx.Count>0)
+                {
+                    _activeOrders.Add(_activeOrdersHpx[_activeOrdersHpx.Count-1]);
+                    _activeOrdersHpx.RemoveAt(_activeOrdersHpx.Count - 1);
+                    work_mode = 1;
+                }
             }
 
             //流动性机器人功能
@@ -772,7 +783,7 @@ namespace Rinjani
                 else
                     orderState.SetOrder(order);
                 decimal curFilledSize = lastPendingSize - order.PendingSize;
-                if (curFilledSize >= config.MinSize && _activeOrders.Count == 0)
+                if (curFilledSize >= config.MinSize)
                 {
                     Order new_order = new Order(order.Broker, order.Side, curFilledSize, order.Price,
                     order.Type);
@@ -780,9 +791,8 @@ namespace Rinjani
                     new_order.FilledSize = curFilledSize;
                     new_order.BrokerOrderId = order.BrokerOrderId;
                     new_order.Status = OrderStatus.Filled;
-                    _activeOrders.Add(new_order);
+                    _activeOrdersHpx.Add(new_order);
                     Log.Info($"Hpx订单部分成交，成交价格{new_order.Price},成交数量{new_order.FilledSize},Zb开始下单");
-                    work_mode = 1;
                     allBuyOrderHpx.Remove(order);
                     PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                     break;
@@ -838,7 +848,7 @@ namespace Rinjani
                 else
                     orderState.SetOrder(order);
                 decimal curFilledSize = lastPendingSize - order.PendingSize;
-                if (curFilledSize >= config.MinSize && _activeOrders.Count == 0)
+                if (curFilledSize >= config.MinSize)
                 {
                     Order new_order = new Order(order.Broker, order.Side, order.Size, order.Price,
                     order.Type);
@@ -846,9 +856,8 @@ namespace Rinjani
                     new_order.FilledSize = curFilledSize;
                     new_order.BrokerOrderId = order.BrokerOrderId;
                     new_order.Status = OrderStatus.Filled;
-                    _activeOrders.Add(new_order);
+                    _activeOrdersHpx.Add(new_order);
                     Log.Info($"Hpx订单部分成交，成交价格{new_order.Price},成交数量{new_order.FilledSize},Zb开始下单");
-                    work_mode = 1;
                     allSellOrderHpx.Remove(order);
                     PrintOrderInfo(allBuyOrderHpx, allSellOrderHpx);
                     break;
@@ -942,7 +951,7 @@ namespace Rinjani
                 {
                     ZbFilledSize += _activeOrders[j].FilledSize;
                 }
-                if (ZbFilledSize > 0 && ZbFilledSize >= _activeOrders[0].FilledSize - 0.001m)
+                if (ZbFilledSize > 0 && ZbFilledSize >= _activeOrders[0].FilledSize - 0.01m)
                 {
                     _brokerAdapterRouter.Cancel(order);
                     Sleep(config.SleepAfterSend);
@@ -970,7 +979,7 @@ namespace Rinjani
                             {
                                 ZbFilledSize += _activeOrders[j].FilledSize;
                             }
-                            if (ZbFilledSize > 0 && ZbFilledSize >= _activeOrders[0].FilledSize - 0.001m)
+                            if (ZbFilledSize > 0 && ZbFilledSize >= _activeOrders[0].FilledSize - 0.01m)
                             {
                                 _brokerAdapterRouter.Cancel(order);
                                 Sleep(config.SleepAfterSend);
@@ -1015,7 +1024,7 @@ namespace Rinjani
                             {
                                 ZbFilledSize += _activeOrders[j].FilledSize;
                             }
-                            if (ZbFilledSize > 0 && ZbFilledSize >= _activeOrders[0].FilledSize - 0.001m)
+                            if (ZbFilledSize > 0 && ZbFilledSize >= _activeOrders[0].FilledSize - 0.01m)
                             {
                                 _brokerAdapterRouter.Cancel(order);
                                 Sleep(config.SleepAfterSend);
@@ -1130,7 +1139,6 @@ namespace Rinjani
             if (cpyAskZb == null || cpyAskZb.Count() == 0 || highestBidPrice == -1)
             {
                 Log.Info("Zb未获取到卖单数据");
-                return;
                 return;
             }
             lowestAskPrice = cpyAskZb.FirstOrDefault().Price;
