@@ -12,11 +12,11 @@
   "ArbitragePoint": "0.1", //套利开启点 百分比
   "CancelPoint": "0.1", //取消点 百分比
   "StopPoint": "0.1", //止损点 百分比
-  "IterationInterval": "2000",
-  "SleepAfterSend": "1200",
+  "IterationInterval": "1000",
+  "SleepAfterSend": "1000",
   "MaxRetryCount": "1000",
   "CancelAllOrders": "false", //删除HPX所有下单
-  "OrderStatusCheckInterval": "2000",
+  "OrderStatusCheckInterval": "1000",
   "EmailAddress": "xxxxxxxxx@163.com",
   "Brokers": [
     {
