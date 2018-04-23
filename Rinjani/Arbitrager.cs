@@ -543,13 +543,6 @@ namespace Rinjani
                 {
                     Log.Error(ex.Message);
                     Log.Debug(ex);
-                    EmailHelper.SendMailUse(_configStore.Config.EmailAddress, "Rinjnai程序退出", Resources.ArbitragerThreadHasBeenStopped + ex.Message);
-                    if (Environment.UserInteractive)
-                    {
-                        Log.Error(Resources.ArbitragerThreadHasBeenStopped);
-                        Console.ReadLine();
-                    }
-                    Environment.Exit(-1);
                 }
                 Sleep(_configStore.Config.IterationInterval);
             }
@@ -559,20 +552,28 @@ namespace Rinjani
         {
             while (true)
             {
-                _quoteAggregator.ZbAggregate();//更新ticker数据
-                if (_activeOrders.Count == 1&& _activeOrders[0].Status == OrderStatus.Filled)
+                try
                 {
-                    if (_activeOrders[0].Side == OrderSide.Buy)
-                        ZbSellOrderDeal();
-                    else
-                        ZbBuyOrderDeal();
+                    CheckZbBalance();
+                    _quoteAggregator.ZbAggregate();//更新ticker数据
+                    if (_activeOrders.Count == 1 && _activeOrders[0].Status == OrderStatus.Filled)
+                    {
+                        if (_activeOrders[0].Side == OrderSide.Buy)
+                            ZbSellOrderDeal();
+                        else
+                            ZbBuyOrderDeal();
+                    }
+                    if (_activeOrders.Count > 1)
+                    {
+                        ZbCheckOrderState();
+                        ZbCheckLiquidOrderState();
+                    }
                 }
-                if (_activeOrders.Count > 1)
+                catch(Exception ex)
                 {
-                    ZbCheckOrderState();
-                    ZbCheckLiquidOrderState();
+                    Log.Error(ex.Message);
+                    Log.Debug(ex);
                 }
-                ChecZbBalance();
                 Sleep(_configStore.Config.IterationInterval);
             }
         }
@@ -580,6 +581,7 @@ namespace Rinjani
         private void Arbitrage()
         {
             //套利功能
+            CheckHpxBalance();
             if (_configStore.Config.Arbitrage && _activeOrders.Count == 0)
             {
                 Log.Info(Resources.LookingForOpportunity);                
@@ -619,11 +621,10 @@ namespace Rinjani
 
                 LiquidBot();
             }
-            CheckHpxBalance();
         }
 
         bool _sendHpxBalanceInfoEmalFlag = true;
-        public int hpxloopcnt = 0;
+        public int hpxloopcnt = 10;
         public void CheckHpxBalance()
         {
             if (hpxloopcnt++ < 5)
@@ -651,8 +652,8 @@ namespace Rinjani
         }
 
         bool _sendZbBalanceInfoEmalFlag = true;
-        public int zbloopcnt = 0;
-        public void ChecZbBalance()
+        public int zbloopcnt = 10;
+        public void CheckZbBalance()
         {
             if (zbloopcnt++ < 5)
             {
