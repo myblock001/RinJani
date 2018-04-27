@@ -531,6 +531,42 @@ namespace Rinjani
             }
             return order;
         }
+        DateTime dt = DateTime.Now.Date;
+        public void DailySendEmail()
+        {
+            DateTime today = DateTime.Now.Date ;
+            if(dt< today)
+            {
+                dt = today;
+                string hpxmsg = $"Hpx {_configHpx.Leg1} 余额:{_positionService.BalanceHpx.Leg1},冻结:";
+                decimal hpxfreezleg1 = 0;
+                decimal hpxfreezleg2 = 0;
+                foreach (Order o in _activeOrdersHpx)
+                {
+                    hpxfreezleg1 += o.PendingSize;
+                    hpxfreezleg2 += o.PendingSize * o.Price;
+                }
+                int i = 0;
+                decimal zbfreezleg1 = 0;
+                decimal zbfreezleg2 = 0;
+                string pending_orders = "";
+                foreach (Order o in _activeOrders)
+                {
+                    if(i++==0)
+                    {
+                        continue;
+                    }
+                    zbfreezleg1 += o.PendingSize;
+                    zbfreezleg2 += o.PendingSize * o.Price;
+                    pending_orders += o.ToString()+"\r\n";
+                }
+                hpxmsg += hpxfreezleg1.ToString()+" "+ $"{_configHpx.Leg2} 余额:{_positionService.BalanceHpx.Leg2},冻结:"+ hpxfreezleg2;
+                string zbmsg = $"Zb {_configZb.Leg1} 余额:{_positionService.BalanceZb.Leg1},冻结:";
+                zbmsg += zbfreezleg1;
+                zbmsg = $"{_configZb.Leg2} 余额:{_positionService.BalanceZb.Leg2},冻结:"+ zbfreezleg2;
+                zbmsg += "\r\n" + pending_orders;
+            }
+        }
 
         public void HpxWork()
         {
@@ -560,6 +596,7 @@ namespace Rinjani
                 try
                 {
                     CheckZbBalance();
+                    DailySendEmail();
                     _quoteAggregator.ZbAggregate();//更新ticker数据
                     if (_activeOrders.Count == 1 && _activeOrders[0].Status == OrderStatus.Filled)
                     {
