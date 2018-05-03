@@ -388,6 +388,7 @@ namespace Rinjani
                             _brokerAdapterRouter.Cancel(order);
                             Sleep(config.SleepAfterSend);
                             _brokerAdapterRouter.Refresh(order);//防止撤销时部分成交
+                            ZbFilledSize = 0;
                             for (int j = 1; j < _activeOrders.Count; j++)
                             {
                                 ZbFilledSize += _activeOrders[j].FilledSize;
@@ -435,6 +436,7 @@ namespace Rinjani
                             _brokerAdapterRouter.Cancel(order);
                             Sleep(config.SleepAfterSend);
                             _brokerAdapterRouter.Refresh(order);//防止撤销时部分成交
+                            ZbFilledSize = 0;
                             for (int j = 1; j < _activeOrders.Count; j++)
                             {
                                 ZbFilledSize += _activeOrders[j].FilledSize;
@@ -1012,6 +1014,7 @@ namespace Rinjani
                             _brokerAdapterRouter.Cancel(order);
                             Sleep(config.SleepAfterSend);
                             _brokerAdapterRouter.Refresh(order);//防止撤销时部分成交
+                            ZbFilledSize = 0;
                             for (int j = 1; j < _activeOrders.Count; j++)
                             {
                                 ZbFilledSize += _activeOrders[j].FilledSize;
@@ -1057,6 +1060,7 @@ namespace Rinjani
                             _brokerAdapterRouter.Cancel(order);
                             Sleep(config.SleepAfterSend);
                             _brokerAdapterRouter.Refresh(order);//防止撤销时部分成交
+                            ZbFilledSize = 0;
                             for (int j = 1; j < _activeOrders.Count; j++)
                             {
                                 ZbFilledSize += _activeOrders[j].FilledSize;
